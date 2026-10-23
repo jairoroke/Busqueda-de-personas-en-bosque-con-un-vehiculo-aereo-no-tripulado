@@ -1,0 +1,94 @@
+\chapter{ROS 2 y PX4 para principiantes}
+
+\begin{enpocas}
+La terminal en cinco minutos, qué es ROS~2 (nodos, tópicos, mensajes, parámetros, launch), qué es PX4,
+y cómo se hablan los dos por medio del agente uXRCE-DDS.
+\end{enpocas}
+
+\section{La terminal en cinco minutos}
+
+\begin{lstlisting}[style=bash]
+pwd                      # ¿en qué carpeta estoy?
+ls                       # ¿qué hay aquí?
+cd ~/ros2_ws             # entrar a una carpeta
+cat archivo.txt          # ver un archivo
+Ctrl+C                   # detener el programa que está corriendo
+\end{lstlisting}
+
+\begin{consejo}
+Tab completa nombres y la flecha arriba recupera la orden anterior.
+\end{consejo}
+
+\section{ROS 2}
+
+\textbf{ROS~2} (\emph{Robot Operating System}) conecta muchos programas pequeños. Cada programa es un
+\textbf{nodo}; los nodos se mandan \textbf{mensajes} por canales con nombre llamados \textbf{tópicos}.
+Uno \emph{publica}, otros se \emph{suscriben}, sin conocerse entre sí.
+
+\begin{ejemplo}
+Una cocina de restaurante: quien toma pedidos los pega en un tablero (tópico), el cocinero los toma
+de ahí y deja los platos en la barra (otro tópico), de donde los recoge el mesero. Nadie habla con
+nadie directamente.
+\end{ejemplo}
+
+En este proyecto:
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.5cm}p{10.5cm}}
+\toprule
+\textbf{Tópico} & \textbf{Qué lleva} \\ \midrule \endhead
+\cod{/camera} & imágenes de la cámara del dron (Gazebo $\rightarrow$ ROS) \\
+\cod{/detecciones} & recuadros de personas que encuentra YOLO \\
+\cod{/personas/estimaciones} & una posición en el suelo por cada detección \\
+\cod{/personas/candidatas} & candidatas fusionadas con su confianza y número de detecciones \\
+\cod{/personas/gps}, \cod{/personas/alerta} & aviso de cada persona confirmada \\
+\cod{/fmu/out/vehicle_odometry} & posición y orientación estimadas por PX4 \\
+\cod{/fmu/in/trajectory_setpoint} & consigna de posición que manda la misión a PX4 \\
+\cod{/x500/lidar/points} & nube de puntos del LiDAR \\
+\bottomrule
+\end{longtable}
+
+\begin{lstlisting}[style=bash]
+ros2 node list
+ros2 topic list
+ros2 topic echo /personas/alerta
+ros2 topic hz /camera
+\end{lstlisting}
+
+Los ajustes de cada nodo son \textbf{parámetros}; un archivo \textbf{launch} arranca todos los nodos con
+sus parámetros. El nuestro, \cod{simulacion.launch.py}, también genera el bosque y arranca Gazebo,
+PX4 o ArduPilot y MAVProxy.
+
+\section{PX4}
+
+\textbf{PX4} es uno de los dos pilotos automáticos de código abierto más usados (el otro es ArduPilot).
+Estima el estado con un filtro de Kalman (EKF2), controla en cascada (posición $\rightarrow$
+velocidad $\rightarrow$ actitud $\rightarrow$ velocidad angular) y tiene modos de vuelo. Dos son clave
+aquí:
+\begin{description}
+  \item[Offboard:] PX4 obedece consignas de una computadora externa (nuestra misión) que debe llegar
+        al menos dos veces por segundo; si dejan de llegar, PX4 se protege.
+  \item[Neural Control] (módulo \cod{mc_nn_control}, en la versión 1.17): una red neuronal calcula
+        directamente los comandos de los cuatro motores (capítulo~\ref{cap:control-neuronal}).
+\end{description}
+
+\section{El puente: uXRCE-DDS}
+
+PX4 tiene su propio sistema interno de mensajes (uORB). El \textbf{agente Micro XRCE-DDS} los traduce a
+tópicos de ROS~2 con el prefijo \cod{/fmu/}: \cod{/fmu/out/...} lo que publica PX4,
+\cod{/fmu/in/...} lo que recibe. Los tipos de mensaje vienen del paquete \cod{px4_msgs}, que debe ser
+de la misma versión que PX4 (\cod{release/1.17}).
+
+\begin{leccion}
+En PX4~1.17 algunos mensajes son \emph{versionados}: el estado del vehículo se publica en
+\cod{/fmu/out/vehicle_status_v1}, no en \cod{/fmu/out/vehicle_status} como decía el diseño original.
+Escuchar el tópico equivocado no da error: simplemente nunca llega nada.
+\end{leccion}
+
+\section{Workspace y compilación}
+
+\begin{lstlisting}[style=bash]
+cd ~/ros2_ws
+colcon build --symlink-install
+source install/setup.bash
+\end{lstlisting}
+El workspace contiene \cod{mision} (Python), \cod{mision_gz_plugins} (C++), \cod{px4_msgs} y, para
+ArduPilot, \cod{ardupilot_gazebo}.

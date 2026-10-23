@@ -1,0 +1,83 @@
+\chapter{Referencia rápida}
+
+\begin{enpocas}
+Los argumentos del \emph{launch}, los parámetros de la misión, los tópicos y los programas, en tablas
+para consultar.
+\end{enpocas}
+
+\section{Argumentos de \texorpdfstring{\texttt{simulacion.launch.py}}{simulacion.launch.py}}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{3.3cm}p{7.5cm}}
+\toprule
+\textbf{Argumento} & \textbf{Por omisión} & \textbf{Qué hace} \\ \midrule \endhead
+\cod{oclusion} & media & baja, media, alta: cobertura de copas 15, 45, 75~\% \\
+\cod{iluminacion} & alta & alta (mediodía) o baja (sombras largas) \\
+\cod{viento} & no & si: 4~m/s medios con ráfagas \\
+\cod{semilla}, \cod{personas} & 1, (1 a 3) & bosque y número de personas \\
+\cod{estrategia} & fija & fija o reobs (Algoritmo~1) \\
+\cod{piloto} & px4 & px4 o ardupilot \\
+\cod{controlador} & cascada & cascada (del piloto) o red \\
+\cod{altura}, \cod{velocidad}, \cod{lado} & 30, 3, 120 & m, m/s, m \\
+\cod{pesos}, \cod{umbral} & YOLO26s, 0.25 & modelo del detector y confianza mínima \\
+\cod{pesos_red} & (la instalada) & pesos de la red para \cod{controlador_red} (ArduPilot) \\
+\cod{latencia_extra_ms}, \cod{saltar_cuadros} & 0, 0 & degradación artificial del detector (P3) \\
+\cod{gui}, \cod{mavproxy} & true, true & ventanas de Gazebo y estación de tierra \\
+\cod{salida} & \cod{~/resultados/corrida.json} & registro del vuelo \\
+\cod{px4}, \cod{ardupilot} & \cod{~/PX4-Autopilot}, \cod{~/ardupilot} & dónde están los pilotos \\
+\bottomrule
+\end{longtable}
+
+\section{Parámetros de \texorpdfstring{\texttt{mision\_node}}{mision\_node}}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{3.3cm}p{7.5cm}}
+\toprule
+\textbf{Parámetro} & \textbf{Por omisión} & \textbf{Qué hace} \\ \midrule \endhead
+\cod{adelanto_max} & 3.0~m & distancia máxima de la consigna por delante del dron \\
+\cod{huella} & 70~m & ancho de la huella para planear franjas \\
+\cod{s1}, \cod{s2} & 0.3, 0.6 & confianza de una candidata dudosa \\
+\cod{max_reobs}, \cod{altura_reobs}, \cod{espera_reobs} & 2, 20~m, 3~s & re-observación \\
+\cod{radio_acierto}, \cod{min_detecciones} & 5~m, 1 & para las métricas \\
+\cod{tiempo_max} & 900~s & corta la misión si se pasa \\
+\cod{prealimentacion} & $-1$ (auto) & consigna adelantada con la red \\
+\cod{tau_adelanto} & 0~s & filtro del adelanto (desactivado) \\
+\cod{n_aviso} & 10 & detecciones para avisar con GPS \\
+\cod{registro_personas} & \cod{~/personas_localizadas.csv} & bitácora de avisos \\
+\cod{origen_gps} & 19.4826, $-99.2447$, 2250 & origen del mundo \\
+\cod{evasion}, \cod{radio_evasion}, \cod{alcance_evasion} & true, 3~m, 20~m & evasión con LiDAR \\
+\bottomrule
+\end{longtable}
+
+\section{Tópicos}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{5.5cm}>{\raggedright\arraybackslash}p{3.6cm}p{5.9cm}}
+\toprule
+\textbf{Tópico} & \textbf{Tipo} & \textbf{Quién lo publica} \\ \midrule \endhead
+\cod{/camera}, \cod{/camera_info} & Image, CameraInfo & Gazebo (puente) \\
+\cod{/detecciones} & Detection2DArray & detector \\
+\cod{/camera_yolo} & Image & detector (imagen con recuadros) \\
+\cod{/detector/latencia_ms} & Float32 & detector \\
+\cod{/personas/estimaciones} & Detection3DArray & localizador (cada detección) \\
+\cod{/personas/candidatas} & Detection3DArray & localizador (fusionadas) \\
+\cod{/personas/gps}, \cod{/personas/alerta} & NavSatFix, String & misión \\
+\cod{/x500/consigna} & PointStamped & misión \\
+\cod{/x500/lidar/points} & PointCloud2 & Gazebo (puente) \\
+\cod{/fmu/out/vehicle_odometry} & VehicleOdometry & PX4 (o \cod{mision_ardupilot}) \\
+\cod{/fmu/in/trajectory_setpoint} & TrajectorySetpoint & misión \\
+\bottomrule
+\end{longtable}
+
+\section{Programas}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{5.5cm}p{9.5cm}}
+\toprule
+\textbf{Programa} & \textbf{Para qué} \\ \midrule \endhead
+\cod{scripts/generar_mundo.py} & bosque por factores \\
+\cod{scripts/generar_vehiculo.py} & modelos x500\_busqueda (PX4 y ArduPilot) \\
+\cod{scripts/importar_personas.py} & modelos de personas desde Gazebo Fuel \\
+\cod{scripts/capturar_dataset.py}, \cod{preparar_datos.py}, \cod{entrenar_detector.py} & datos y entrenamiento del detector \\
+\cod{scripts/correr_experimentos.py}, \cod{analisis_wilcoxon.py} & campaña y estadística \\
+\cod{scripts/instalar_px4.sh} & copia la red y el \emph{airframe} a PX4 \\
+\cod{codigo/nn_imitacion.py}, \cod{ppo_refinamiento.py}, \cod{exportar_tflite.py} & entrenamiento y exportación de la red \\
+\cod{mision/prueba_neural.py} & escalones con la red en SITL \\
+\bottomrule
+\end{longtable}

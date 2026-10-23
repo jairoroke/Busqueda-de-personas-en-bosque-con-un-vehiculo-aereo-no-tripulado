@@ -1,0 +1,73 @@
+\chapter{El x500 en Gazebo}
+\label{cap:x500}
+
+\begin{enpocas}
+De dónde sale el vehículo de la simulación, qué se le cambió al x500 de PX4 y por qué, y cómo es su
+variante para ArduPilot.
+\end{enpocas}
+
+\section{El x500\_busqueda}
+
+PX4 trae modelos oficiales del x500. El proyecto parte del \cod{x500_mono_cam_down} (con una cámara
+hacia abajo) y \cod{scripts/generar_vehiculo.py} arma \cod{x500_busqueda} copiando su texto con tres
+cambios:
+\begin{enumerate}
+  \item \textbf{La cámara va 25~cm debajo del centro}, bajo los patines.
+  \item \textbf{Viento habilitado} en el cuerpo (\cod{<enable_wind>}), para que el sistema
+        \cod{WindEffects} del mundo lo empuje.
+  \item \textbf{Un LiDAR 3D} (360°$\times$120 haces, 16 canales de $-35$° a $+15$°, 30~m, 10~Hz) para la
+        evasión de obstáculos.
+\end{enumerate}
+
+\begin{leccion}
+En el modelo de PX4 la cámara está 10~cm \emph{arriba} del centro y mira hacia abajo a través del
+cuerpo: el armazón, los motores y el tren de aterrizaje tapaban más de la mitad de la imagen. El diseño
+original suponía 10~cm \emph{abajo}. La cámara se movió 25~cm abajo, y el localizador usa ese mismo valor
+($t_{BC}$).
+\end{leccion}
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Parámetro} & \textbf{Valor} \\ \midrule
+Masa total & 2.114~kg (cuerpo 2.0, rotores $4\times16$~g, cámara 50~g) \\
+Inercia del cuerpo & diag(0.0217, 0.0217, 0.040)~kg\,m$^2$ \\
+Rotores & $(\pm0.174, \pm0.174)$~m, hélices de 13'' \\
+$k_f$, $k_m$, $\omega_{max}$ & $8.54858\times10^{-6}$~N/(rad/s)$^2$, 0.016~m, 1000~rad/s \\
+Constantes de tiempo de los motores & 12.5~ms al subir, 25~ms al bajar \\
+Cámara & $1280\times960$, HFOV 1.74~rad, hacia abajo, $t_{BC} = (0, 0, -0.25)$~m \\
+Centro de masa & corrido 0.7~mm en $x$ y en $y$ por la cámara \\
+\bottomrule
+\end{tabular}
+\caption{Parámetros del x500 de la simulación.}
+\end{table}
+
+\section{La variante para ArduPilot}
+
+\cod{x500_busqueda_ardupilot} es el mismo vehículo con:
+\begin{itemize}
+  \item \cod{ArduPilotPlugin}, que intercambia sensores y motores con ArduCopter (salidas de
+        1000--2000~µs $\rightarrow$ 0--1000~rad/s, mismo orden de motores que PX4);
+  \item una IMU para ArduPilot y \cod{OdometryPublisher} a 400~Hz (el estado para la red);
+  \item el sistema \cod{SelectorMotores} (paquete \cod{mision_gz_plugins}), que deja pasar los comandos
+        de ArduPilot o los de la red, según lo que pida la misión.
+\end{itemize}
+En esa variante el vehículo va dentro del mundo, que corre a 1~kHz (lo que espera ArduPilot).
+
+\begin{lstlisting}[style=bash]
+python3 scripts/generar_vehiculo.py      # escribe models/x500_busqueda y models/x500_busqueda_ardupilot
+bash scripts/instalar_px4.sh $PWD/codigo/control_net_x500_busqueda    # y lo copia a PX4
+\end{lstlisting}
+
+\section{Las personas}
+
+Cuatro modelos de OpenRobotics (Gazebo Fuel, CC0): de pie, caminando, mujer y sentada (Rescue Randy),
+todos estáticos y con la etiqueta~1 del sistema \cod{Label}. La persona acostada es uno de pie girado
+90°. Los copia y adapta \cod{scripts/importar_personas.py}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{gz_persona_sentada.jpg}
+\caption{Una persona sentada bajo los árboles: desde arriba, una copa puede taparla por completo.}
+\end{figure}

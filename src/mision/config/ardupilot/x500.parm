@@ -1,0 +1,23 @@
+# Parámetros de ArduCopter para x500_busqueda_ardupilot (se cargan sobre
+# Tools/autotest/default_params/gazebo-iris.parm).
+# Quad en "X"; las salidas 1-4 son los rotor_0..3 del x500 (mismo orden que PX4).
+FRAME_CLASS     1
+FRAME_TYPE      1
+# Salidas 1000-2000 us -> 0-1000 rad/s lineal; el empuje crece con w^2, así que
+# la curva de empuje es cuadrática pura.
+MOT_PWM_MIN     1000
+MOT_PWM_MAX     2000
+MOT_THST_EXPO   1.0
+MOT_SPIN_ARM    0.10
+MOT_SPIN_MIN    0.15
+# Vuelo estacionario: 2.114 kg -> w_h = 779 rad/s, (779/1000)^2 = 0.61 del empuje máximo.
+MOT_THST_HOVER  0.61
+MOT_HOVER_LEARN 2
+# La misión la manda ROS 2 por MAVLink: sin radio ni estación de tierra.
+FS_THR_ENABLE   0
+FS_GCS_ENABLE   0
+# Velocidades de la misión (cm/s): como el barrido de PX4 (3 m/s).
+WPNAV_SPEED     300
+WPNAV_SPEED_UP  300
+WPNAV_SPEED_DN  150
+LAND_SPEED      70

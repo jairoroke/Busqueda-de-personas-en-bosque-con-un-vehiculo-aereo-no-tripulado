@@ -1,0 +1,86 @@
+\chapter{Instalación paso a paso}
+\label{cap:instalacion}
+
+\begin{enpocas}
+Qué hay que instalar y en qué orden: ROS~2 y Gazebo, PX4 con el módulo neuronal, el agente uXRCE-DDS,
+el workspace, ArduPilot y los entornos de Python. Todo está en \cod{scripts/instalar_entorno.sh},
+pensado para correrse bloque por bloque y sin \cod{sudo} salvo donde se indica.
+\end{enpocas}
+
+\section{0. ROS 2 Jazzy y Gazebo Harmonic}
+
+Ubuntu 24.04 con ROS~2 Jazzy y el puente \cod{ros-jazzy-ros-gz} (que trae Gazebo Harmonic), instalados
+con el repositorio oficial de ROS~2 (\cod{ros-jazzy-desktop}, \cod{ros-dev-tools},
+\cod{ros-jazzy-ros-gz}).
+
+\section{1. PX4 release/1.17}
+
+\begin{lstlisting}[style=bash]
+cd ~ && git clone --recursive -b release/1.17 https://github.com/PX4/PX4-Autopilot.git
+python3 -m venv --system-site-packages ~/.venvs/px4
+~/.venvs/px4/bin/pip install -r ~/PX4-Autopilot/Tools/setup/requirements.txt ninja
+\end{lstlisting}
+
+\begin{aviso}
+La etiqueta \cod{v1.17.0} de PX4 no existe (solo \cod{v1.17.0-rc2}): se usa la rama \cod{release/1.17}.
+Ubuntu 24.04 no deja instalar con \cod{pip install --user} sobre el Python del sistema (PEP 668): por eso
+cada grupo de dependencias va en su propio entorno.
+\end{aviso}
+
+\section{2. Agente Micro XRCE-DDS 2.4.3}
+
+\begin{lstlisting}[style=bash]
+cd ~ && git clone -b v2.4.3 https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
+cd Micro-XRCE-DDS-Agent && mkdir build && cd build
+env -i HOME=$HOME PATH=/usr/bin:/bin cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local
+env -i HOME=$HOME PATH=/usr/bin:/bin make -j"$(nproc)" && make install
+\end{lstlisting}
+Se compila con un entorno limpio (\cod{env -i}) para que use su propio Fast-DDS y no el de ROS, y se
+instala en \cod{~/.local} sin \cod{sudo}.
+
+\section{3. Workspace}
+
+\begin{lstlisting}[style=bash]
+git clone https://github.com/jairoroke/<repositorio>.git ~/ros2_ws
+cd ~/ros2_ws/src
+git clone -b release/1.17 https://github.com/PX4/px4_msgs.git
+git clone https://github.com/ArduPilot/ardupilot_gazebo.git       # solo para piloto:=ardupilot
+cd ~/ros2_ws && colcon build --symlink-install && source install/setup.bash
+\end{lstlisting}
+
+\section{4. Entornos de Python}
+
+\begin{lstlisting}[style=bash]
+python3 -m venv ~/venv-mision
+~/venv-mision/bin/pip install numpy scipy matplotlib pillow tensorflow-cpu    # exportar la red
+\end{lstlisting}
+\begin{itemize}
+  \item \cod{~/venv-mision}: TensorFlow, para exportar la red a TFLite.
+  \item \cod{~/.venvs/yolo}: Ultralytics con PyTorch y CUDA (y \cod{numpy<2}, para leer los mensajes de
+        ROS~2). Corre el detector y el refinamiento PPO.
+  \item \cod{~/venv-ardupilot}: MAVProxy, pymavlink y \cod{python-xlib} (para acomodar las ventanas).
+\end{itemize}
+
+\section{5. Vehículo, red y compilación de PX4}
+
+\begin{lstlisting}[style=bash]
+cd ~/ros2_ws/src/mision
+python3 scripts/generar_vehiculo.py                 # x500_busqueda y su variante para ArduPilot
+cd codigo && ~/venv-mision/bin/python exportar_tflite.py --pesos pesos_nn_x500_busqueda.npz --salida control_net_x500_busqueda
+cd .. && bash scripts/instalar_px4.sh $PWD/codigo/control_net_x500_busqueda
+\end{lstlisting}
+\cod{instalar_px4.sh} copia a PX4 el vehículo, el \emph{airframe} \cod{4099_gz_x500_busqueda} y la red
+(guardando una vez la original como \cod{control_net.*.px4}), agrega \cod{/fmu/out/neural_control} a los
+tópicos que exporta PX4 y compila \cod{make px4_sitl_neural}.
+
+\section{6. ArduPilot (opcional)}
+
+ArduCopter 4.7.2 compilado para SITL en \cod{~/ardupilot} (\cod{./waf configure --board sitl \&\& ./waf
+copter}) y el plugin \cod{ardupilot_gazebo} en el workspace.
+
+\section{Comprobación}
+
+\begin{lstlisting}[style=bash]
+cd ~/ros2_ws/src/mision && python3 -m pytest -q test/          # 8 pruebas
+ros2 launch mision simulacion.launch.py gui:=false              # una misión completa, unos 4 min
+\end{lstlisting}

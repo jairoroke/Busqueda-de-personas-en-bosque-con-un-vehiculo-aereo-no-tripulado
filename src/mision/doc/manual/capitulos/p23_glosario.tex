@@ -1,0 +1,52 @@
+\chapter{Glosario}
+
+\begin{description}[style=nextline,leftmargin=0.6cm]
+  \item[AP50, AP50-95] Precisión promedio de un detector, contando como acierto un recuadro que se
+        traslapa al menos 50~\% (o promediando de 50 a 95~\%) con el verdadero.
+  \item[ArduPilot / ArduCopter] Piloto automático de código abierto; ArduCopter es su versión para
+        multirrotores.
+  \item[Armar] Habilitar los motores para que puedan girar.
+  \item[Barrido] Recorrer una zona en franjas paralelas para verla toda.
+  \item[Bootstrap] Remuestrear los datos muchas veces para estimar la incertidumbre de una cifra.
+  \item[Candidata] Posible persona en el mapa: varias detecciones fusionadas en un punto.
+  \item[Cascada] Lazos de control anidados: posición afuera, velocidad, actitud y velocidad angular
+        adentro.
+  \item[Consigna] Lo que se pide al controlador (posición, velocidad).
+  \item[Consigna adelantada] Consigna desplazada en la dirección del movimiento para que un PD siga
+        una referencia móvil sin atraso.
+  \item[Cobertura de copas] Fracción del suelo tapada por árboles vistos desde arriba.
+  \item[Detector] Red que encuentra objetos en una imagen y los marca con recuadros.
+  \item[Diseño factorial] Experimento que prueba todas las combinaciones de los factores.
+  \item[EKF] Filtro de Kalman extendido: estima posición y orientación combinando sensores.
+  \item[ENU / NED] Este-Norte-Arriba (ROS, Gazebo) y Norte-Este-Abajo (PX4, aviación).
+  \item[Falsa alarma] Candidata que no corresponde a ninguna persona.
+  \item[FLU / FRD] Marcos del cuerpo: Frente-Izquierda-Arriba (ROS) y Frente-Derecha-Abajo (PX4).
+  \item[Gazebo] Simulador de robots con física, render y sensores.
+  \item[GUIDED] Modo de ArduPilot en el que obedece consignas de una computadora.
+  \item[Holm] Corrección que ajusta los valores $p$ cuando se hacen muchas pruebas a la vez.
+  \item[Huella] Rectángulo del suelo que ve la cámara.
+  \item[Imitación] Entrenar una red para que copie las salidas de otro controlador.
+  \item[LiDAR] Sensor que mide distancias con pulsos láser en muchas direcciones.
+  \item[MAVLink] Protocolo de mensajes entre pilotos automáticos y estaciones de tierra.
+  \item[MAVProxy] Estación de tierra en terminal, con consola y mapa.
+  \item[Máquina de estados] Programa organizado en etapas con reglas para pasar de una a otra.
+  \item[Neural Control] Modo de PX4 en el que una red neuronal manda los motores directamente.
+  \item[Offboard] Modo de PX4 en el que obedece consignas de una computadora.
+  \item[Oclusión] Que algo tape lo que se quiere ver.
+  \item[PPO] Algoritmo de aprendizaje por refuerzo que mejora una política con pasos pequeños.
+  \item[Prealimentación] Sumar al control lo que ya se sabe que se necesita (por ejemplo, la velocidad
+        de la referencia), sin esperar a que haya error.
+  \item[PX4] Piloto automático de código abierto.
+  \item[Re-observación] Volver a mirar una candidata dudosa desde más cerca y otro ángulo.
+  \item[RMSE] Raíz del error cuadrático medio.
+  \item[ROS~2] Conjunto de herramientas para que los programas de un robot se comuniquen por tópicos.
+  \item[Semilla] Número que fija los resultados al azar; con la misma semilla sale lo mismo.
+  \item[SITL] \emph{Software in the loop}: el piloto automático real corriendo contra un simulador.
+  \item[TFLite] Formato compacto de redes neuronales para microcontroladores.
+  \item[Tópico] Canal con nombre por el que los nodos de ROS~2 se mandan mensajes.
+  \item[uXRCE-DDS] Puente entre PX4 y ROS~2.
+  \item[VFH] Histograma polar de campo vectorial: evasión que busca la dirección libre más cercana.
+  \item[Wilcoxon] Prueba estadística para diferencias apareadas que no supone una campana de Gauss.
+  \item[WGS84] Elipsoide que modela la forma de la Tierra para el GPS.
+  \item[YOLO] Familia de detectores de objetos que mira la imagen una sola vez.
+\end{description}

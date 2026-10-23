@@ -1,0 +1,53 @@
+\chapter{Lo que se verificó y lo que falta}
+
+\begin{enpocas}
+Los problemas que aparecieron al llevar el diseño a la computadora, cómo se resolvieron, y lo que queda
+pendiente.
+\end{enpocas}
+
+\section{Diferencias con el diseño original}
+
+El diseño original del que parte el proyecto tenía nueve detalles que no funcionaban tal cual. Todos
+están corregidos en el paquete:
+\begin{enumerate}
+  \item La etiqueta \cod{v1.17.0} de PX4 no existe; se usa la rama \cod{release/1.17}.
+  \item El sensor de la cámara se llama \cod{imager}, no \cod{camera}.
+  \item \cod{VehicleStatus} es versionado: el tópico es \cod{/fmu/out/vehicle_status_v1}.
+  \item En \cod{x500_mono_cam_down} la cámara está 10~cm \emph{arriba} del centro y ve el propio
+        vehículo; aquí va 25~cm abajo.
+  \item La configuración de Gazebo de PX4 carga \cod{GstCameraSystem}, que acumula cuadros si el
+        codificador se atora: 110~MB/s y el sistema se queda sin memoria en minutos. Aquí Gazebo
+        arranca sin él.
+  \item \cod{MC_NN_THRST_COEF} trabaja con revoluciones por segundo, no rpm, y faltaban
+        \cod{MC_NN_MIN_RPM} y \cod{THR_MDL_FAC}; los valores correctos están en el \emph{airframe}
+        4099 y los verifican las pruebas.
+  \item La masa del x500 completo es 2.114~kg, no 2.0.
+  \item \cod{exportar_tflite.py} usaba \cod{--salida} como nombre del símbolo en C; el módulo exige
+        \cod{control_net_tflite}.
+  \item PX4 marca sus mensajes con el reloj de pared, no con el de Gazebo; el localizador estima el
+        desfase con el mínimo de (llegada $-$ marca).
+\end{enumerate}
+
+\section{Lo que se comprobó}
+
+\begin{itemize}
+  \item Los programas de modelo, localización, imitación, PPO y exportación reproducen las tablas y
+        salidas de referencia (el TFLite difiere de numpy en $1.1\times10^{-6}$).
+  \item El detector ajustado: AP50 0.954 en validación; el YOLO de COCO no encontraba a nadie.
+  \item La red mejorada: sesgo estacionario de 25.9 a 2.1~cm y misión en 211~s en vez de 427~s.
+  \item Las coordenadas GPS de los avisos coinciden con el GPS de PX4, el \emph{home} de ArduPilot y el
+        mapa de MAVProxy (prueba \cod{test_origen_gps_igual_al_del_mundo}).
+  \item \cod{colcon test}: las 8 pruebas del paquete pasan.
+\end{itemize}
+
+\section{Pendientes}
+
+\begin{itemize}
+  \item \textbf{Falsas alarmas persistentes.} Grupos de robles que el detector confunde en muchos
+        cuadros. Reentrenar con esos ``negativos difíciles'' es el siguiente paso.
+  \item \textbf{PPO.} Ya no diverge, pero no mejora a la imitación; falta una recompensa que premie lo
+        que la imitación no sabe hacer (por ejemplo, rechazar viento).
+  \item \textbf{Seguimiento de cámara en la GUI.} \cod{/gui/follow} no funciona con esta interfaz.
+  \item \textbf{Campaña completa.} Con 5 semillas se ven tendencias; las 30 semillas del diseño dan la
+        potencia estadística para P1.
+\end{itemize}

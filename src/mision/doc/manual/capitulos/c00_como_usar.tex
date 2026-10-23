@@ -1,0 +1,70 @@
+\chapter{Cómo usar este libro}
+
+\section*{¿Para quién es?}
+
+Para cualquier persona que quiera entender, desde cero, cómo funciona un dron que busca personas por
+sí solo: estudiantes, ingenieros de otras áreas o curiosos. No necesitas saber de drones, de visión
+computacional ni de redes neuronales. Ayuda saber usar una computadora con Linux y recordar algo de
+física y matemáticas de bachillerato; cuando haga falta algo más, se explica en el momento.
+
+El libro cuenta una historia concreta: una simulación en la que un dron x500 despega, recorre en
+franjas un bosque de $120\times120$ metros, mira hacia abajo con su cámara, reconoce a las personas
+con una red neuronal (YOLO), calcula en qué punto del suelo está cada una, avisa sus coordenadas GPS y
+aterriza. El vuelo lo controla un piloto automático real (PX4 o ArduPilot) o una red neuronal
+entrenada para imitarlo. Cada pieza de esa historia es una excusa para explicar un concepto.
+
+\section*{Cómo está organizado}
+
+\begin{description}
+  \item[Parte I. Lo básico.] Qué es un dron y cómo vuela, la física mínima, qué es una simulación,
+        y ROS~2 y PX4, que conectan todas las piezas.
+  \item[Parte II. Ver y ubicar.] Qué es una imagen, cómo aprende una red neuronal a reconocer
+        personas y cómo se pasa de un recuadro en la imagen a un punto en el mapa, con su incertidumbre.
+  \item[Parte III. El control.] Cómo se mantiene el dron en su ruta: control en cascada y una red
+        neuronal que aprende a volar imitando al piloto automático.
+  \item[Parte IV. Construir la simulación.] La instalación y cómo se metieron en Gazebo el x500, su
+        cámara, el bosque y las personas.
+  \item[Parte V. La misión.] Cómo el dron decide qué hacer: el barrido, la re-observación de casos
+        dudosos, los avisos GPS y la evasión de obstáculos, con PX4 o con ArduPilot.
+  \item[Parte VI. Experimentos y manos a la obra.] Cómo se diseña y analiza una campaña de cientos de
+        vuelos, un tutorial para tu primer vuelo y la referencia de órdenes.
+\end{description}
+
+Al final hay un \textbf{glosario}. Si solo quieres usar la simulación, ve directo al
+capítulo~\ref{cap:primer-vuelo}.
+
+\section*{Los recuadros}
+
+\begin{recuerda}
+Lo más importante del tema, en pocas palabras.
+\end{recuerda}
+\begin{consejo}
+Trucos prácticos que ahorran tiempo o problemas.
+\end{consejo}
+\begin{ejemplo}
+Una comparación con algo cotidiano.
+\end{ejemplo}
+\begin{tecnico}
+Detalles matemáticos o de programación que puedes saltarte la primera vez.
+\end{tecnico}
+\begin{aviso}
+Errores fáciles de cometer.
+\end{aviso}
+\begin{leccion}
+Problemas reales que aparecieron durante el desarrollo y cómo se resolvieron.
+\end{leccion}
+\begin{ejercicio}
+Algo que puedes hacer en la simulación para comprobar lo que acabas de leer.
+\end{ejercicio}
+
+\section*{Convenciones}
+
+\begin{itemize}
+  \item Las órdenes de terminal van en recuadros grises:
+\begin{lstlisting}[style=bash]
+ros2 launch mision simulacion.launch.py
+\end{lstlisting}
+  \item Nombres de archivos, programas y tópicos en letra de máquina: \cod{localizador_node}.
+  \item \cod{~} es tu carpeta personal. El paquete principal está en \cod{~/ros2_ws/src/mision}.
+  \item Distancias en metros, tiempos en segundos, ángulos en radianes o grados (se indica).
+\end{itemize}

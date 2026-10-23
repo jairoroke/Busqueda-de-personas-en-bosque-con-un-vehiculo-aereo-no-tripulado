@@ -1,0 +1,80 @@
+\chapter{La campaña experimental}
+\label{cap:experimental}
+
+\begin{enpocas}
+Qué preguntas se quieren responder, cómo se diseñan los vuelos para responderlas sin engañarse, la
+prueba de Wilcoxon con la corrección de Holm, y lo que dijo la campaña.
+\end{enpocas}
+
+\section{Las preguntas}
+
+\begin{description}
+  \item[P1.] ¿La re-observación de candidatas dudosas encuentra más personas que el barrido fijo, y
+        en qué nivel de oclusión ayuda más?
+  \item[P2.] ¿Cuánto cuesta? Tiempo de vuelo, personas por minuto y desvío de la ruta.
+  \item[P3.] ¿Qué tan sensible es la misión a un detector más lento o que pierde cuadros
+        (\cod{latencia_extra_ms}, \cod{saltar_cuadros})?
+  \item[P4.] ¿Cambia algo volar con la red neuronal en vez de la cascada de PX4?
+\end{description}
+
+\section{El diseño}
+
+Un \textbf{diseño factorial completo}: todas las combinaciones de oclusión (3), iluminación (2), viento
+(2) y estrategia (2), es decir 24 vuelos por semilla con el controlador en cascada. Para P4 se agregan,
+en oclusión media y sol alto, los 4 vuelos de la red (con y sin viento, las dos estrategias): 28 vuelos
+por semilla.
+
+\begin{lstlisting}[style=bash]
+python3 src/mision/scripts/correr_experimentos.py --semillas 30 --salida ~/resultados     # 840 vuelos
+python3 src/mision/scripts/correr_experimentos.py --semillas 2 --solo oclusion=media      # una parte
+\end{lstlisting}
+
+Cada vuelo es un \cod{ros2 launch} sin interfaz en su propia partición de Gazebo y su dominio de ROS~2,
+dura unos 5~minutos y deja un JSON. El programa salta los vuelos que ya tienen JSON, así que se puede
+interrumpir y continuar, o ampliar de 5 a 30 semillas.
+
+\begin{consejo}
+\textbf{Apareado.} La re-observación y el barrido fijo vuelan \emph{el mismo bosque} (misma semilla,
+iluminación y viento). La diferencia entre los dos vuelos de un par se debe a la estrategia y no a que a
+uno le tocó un bosque más difícil. Así se necesitan muchos menos vuelos para ver un efecto.
+\end{consejo}
+
+\section{Wilcoxon y Holm}
+
+Para cada par se calcula la diferencia $d = \text{reobs} - \text{fija}$ (personas encontradas, por
+ejemplo). La \textbf{prueba de rangos con signo de Wilcoxon} pregunta si esas diferencias tienden a ser
+positivas, sin suponer que siguen una campana de Gauss: ordena las $|d|$, les pone rango y compara la
+suma de los rangos positivos con la de los negativos. Se reporta la mediana de $d$ con un intervalo de
+confianza del 95~\% obtenido por remuestreo (\emph{bootstrap}).
+
+Se hacen 12 pruebas (3 oclusiones $\times$ 4 variables). Con tantas, alguna saldría ``significativa'' por
+pura suerte; la \textbf{corrección de Holm} lo evita: ordena los valores $p$ de menor a mayor y multiplica
+el $k$-ésimo por $(m-k+1)$, sin dejar que bajen.
+
+\begin{lstlisting}[style=bash]
+~/venv-mision/bin/python src/mision/scripts/analisis_wilcoxon.py --resultados ~/resultados
+~/venv-mision/bin/python src/mision/scripts/analisis_wilcoxon.py --demo        # datos sintéticos
+\end{lstlisting}
+
+\begin{aviso}
+Una sola semilla no compara estrategias: en el primer bosque la re-observación puede ganar o perder por
+casualidad. Las conclusiones salen de los pares, no de un vuelo bonito.
+\end{aviso}
+
+\section{Resultados}
+
+\IfFileExists{capitulos/resultados_campana.tex}{%
+Las tablas siguientes las genera \cod{herramientas/tabla_campana.py} a partir de los JSON de
+\cod{~/resultados}; se regeneran al agregar semillas.
+
+\input{capitulos/resultados_campana}
+}{%
+\textit{Las tablas se generan con \cod{herramientas/tabla_campana.py} cuando termina la campaña.}
+}
+
+\begin{leccion}
+\textbf{Las falsas alarmas dependen del umbral.} Con una sola detección cualquier sombra que el detector
+confunda una vez cuenta como candidata (10 a 20 por vuelo); exigiendo 10 detecciones fusionadas quedan
+pocas, y casi todas son grupos de robles que el detector confunde una y otra vez. Por eso la tabla trae
+las dos cifras, y por eso el aviso GPS exige 10.
+\end{leccion}

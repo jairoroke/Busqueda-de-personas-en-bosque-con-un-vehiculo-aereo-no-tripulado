@@ -1,0 +1,34 @@
+% generado por herramientas/tabla_campana.py con 2 corridas
+Corridas analizadas: 2 (semillas 1--1).
+\begin{table}[H]\centering\small
+\begin{tabular}{lllrrrrrrr}
+\toprule
+\textbf{Control} & \textbf{Oclusión} & \textbf{Estrategia} & $n$ & \textbf{Encontradas} & \textbf{FA} & \textbf{FA$_{10}$} & \textbf{Avisos} & \textbf{Duración (s)} & \textbf{RMSE (m)} \\ \midrule
+cascada & baja & fija & 1 & 1/1 & 14.0 & 2.0 & 2.0 & 237 & 0.069 \\
+cascada & baja & reobs & 1 & 1/1 & 22.0 & 6.0 & 5.0 & 278 & 0.279 \\
+\bottomrule
+\end{tabular}
+\caption{Promedios por condición. FA: falsas alarmas con una detección; FA$_{10}$: con al menos 10; avisos GPS por vuelo.}
+\label{tab:campana-medias}
+\end{table}
+\begin{table}[H]\centering\small
+\begin{tabular}{llrrcrr}
+\toprule
+\textbf{Oclusión} & \textbf{Variable} & $n$ & \textbf{Mediana $d$} & \textbf{IC 95~\%} & $p$ & $p_{Holm}$ \\ \midrule
+baja & personas & 1 & 0.000 & [0.000, 0.000] & 1.000 & 1.000 \\
+baja & personas/min & 1 & -0.037 & [-0.037, -0.037] & 1.000 & 1.000 \\
+baja & RMSE (m) & 1 & 0.210 & [0.210, 0.210] & 1.000 & 1.000 \\
+baja & falsas alarmas & 1 & 8.000 & [8.000, 8.000] & 1.000 & 1.000 \\
+media & personas & 0 & -- & [--, --] & -- & -- \\
+media & personas/min & 0 & -- & [--, --] & -- & -- \\
+media & RMSE (m) & 0 & -- & [--, --] & -- & -- \\
+media & falsas alarmas & 0 & -- & [--, --] & -- & -- \\
+alta & personas & 0 & -- & [--, --] & -- & -- \\
+alta & personas/min & 0 & -- & [--, --] & -- & -- \\
+alta & RMSE (m) & 0 & -- & [--, --] & -- & -- \\
+alta & falsas alarmas & 0 & -- & [--, --] & -- & -- \\
+\bottomrule
+\end{tabular}
+\caption{Re-observación menos barrido fijo, apareado por semilla, iluminación y viento (controlador en cascada).}
+\label{tab:campana-wilcoxon}
+\end{table}

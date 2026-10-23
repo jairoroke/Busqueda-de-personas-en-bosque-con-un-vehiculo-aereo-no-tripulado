@@ -1,0 +1,61 @@
+\chapter{Dónde está cada cosa}
+
+\begin{lstlisting}
+~/ros2_ws/src/
+|-- mision/                    paquete principal (Python)
+|   |-- mision/                nodos de ROS 2 y bibliotecas
+|   |-- codigo/                programas de referencia y la red neuronal
+|   |-- launch/simulacion.launch.py
+|   |-- scripts/               generadores, dataset, entrenamiento, campaña, instalación
+|   |-- models/                x500_busqueda, personas, árboles, suelo
+|   |-- px4/                   airframe 4099_gz_x500_busqueda
+|   |-- config/                GUI de Gazebo, parámetros de ArduPilot
+|   |-- yolo/                  personas_yolo26s.pt (detector)
+|   `-- test/                  pruebas (pytest)
+|-- mision_gz_plugins/         SelectorMotores (C++), para ArduPilot con la red
+|-- px4_msgs/                  mensajes de PX4 (clonado, release/1.17)
+`-- ardupilot_gazebo/          plugin de ArduPilot (clonado)
+\end{lstlisting}
+
+\section{Nodos y módulos}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.3cm}p{10.8cm}}
+\toprule
+\textbf{Archivo} & \textbf{Qué hace} \\ \midrule \endhead
+\cod{detector_node.py} & YOLO sobre \cod{/camera}; publica \cod{/detecciones} y la imagen anotada. \\
+\cod{localizador_node.py} & Rayo--terreno, covarianza, asociación de Mahalanobis y fusión. \\
+\cod{mision_node.py} & Barrido offboard, re-observación, Neural Control, avisos GPS, evasión, métricas. \\
+\cod{mision_ardupilot.py} & La misma misión con ArduCopter (GUIDED por MAVLink). \\
+\cod{controlador_red.py} & La red como controlador de motores con ArduPilot. \\
+\cod{geometria.py} & Proyección, localización y covarianza (compartidas con las pruebas). \\
+\cod{metricas.py} & Personas localizadas, falsas alarmas, error, distancia a la ruta. \\
+\cod{evasion.py}, \cod{geo.py} & Evasión con el LiDAR; conversión ENU $\rightarrow$ GPS. \\
+\cod{mavproxy_trayectoria.py}, \cod{ventanas_sitl.py} & Mapa de MAVProxy con ruta y personas; acomodo de ventanas. \\
+\cod{modo_neural.py}, \cod{prueba_neural.py} & Activar Neural Control a mano; escalones de prueba. \\
+\bottomrule
+\end{longtable}
+
+\section{Programas de referencia (\texorpdfstring{\texttt{codigo/}}{codigo/})}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.3cm}p{10.8cm}}
+\toprule
+\cod{sim_modelo.py} & Modelo del x500 con el control base. \\
+\cod{sim_localizacion.py} & Localización, covarianza y Monte Carlo. \\
+\cod{nn_imitacion.py} & Red 15-64-32-4 por clonación + DAgger (\cod{--masa}, \cod{--com}, \cod{--adelanto}). \\
+\cod{ppo_refinamiento.py} & Refinamiento por PPO (\cod{--mejorado}, \cod{--forma}). \\
+\cod{exportar_tflite.py} & TFLite y \cod{control_net.cpp/.hpp}. \\
+\bottomrule
+\end{longtable}
+Sin las opciones nuevas, estos programas reproducen exactamente las cifras de referencia.
+
+\section{Scripts}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.3cm}p{10.8cm}}
+\toprule
+\cod{generar_mundo.py} & Bosque por oclusión, iluminación, viento y semilla, con el JSON de las personas verdaderas. \\
+\cod{generar_vehiculo.py} & El x500 con cámara bajo los patines, viento y LiDAR. \\
+\cod{capturar_dataset.py}, \cod{entrenar_detector.py} & Dataset con cajas visibles y entrenamiento por estrato. \\
+\cod{correr_experimentos.py}, \cod{analisis_wilcoxon.py} & Campaña factorial y pruebas estadísticas. \\
+\cod{instalar_entorno.sh}, \cod{instalar_px4.sh} & Instalación. \\
+\bottomrule
+\end{longtable}

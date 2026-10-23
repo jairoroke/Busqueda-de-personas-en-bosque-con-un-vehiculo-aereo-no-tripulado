@@ -1,0 +1,5 @@
+newmtl pasto
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.02 0.02 0.02
+map_Kd ../materials/textures/pasto.png
