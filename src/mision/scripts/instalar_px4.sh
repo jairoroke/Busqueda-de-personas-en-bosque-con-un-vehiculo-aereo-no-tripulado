@@ -1,29 +1,32 @@
 #!/usr/bin/env bash
 # instalar_px4.sh -- Instala en PX4-Autopilot lo que el proyecto agrega al firmware
 # y recompila el objetivo px4_sitl_neural:
-#   1. el vehículo x500_busqueda (Tools/simulation/gz/models),
-#   2. el airframe 4099_gz_x500_busqueda (ROMFS) con los parámetros del modo
-#      Neural Control,
+#   1. los vehículos tarot650_busqueda y x500_busqueda (Tools/simulation/gz/models),
+#   2. los airframes 4100_gz_tarot650_busqueda y 4099_gz_x500_busqueda (ROMFS) con
+#      los parámetros del modo Neural Control,
 #   3. la red del controlador neuronal (control_net.cpp/.hpp del módulo
-#      mc_nn_control), exportada con codigo/exportar_tflite.py.
+#      mc_nn_control), exportada con codigo/exportar_tflite.py. PX4 lleva una sola
+#      red compilada: la del vehículo con el que se va a volar.
 # La red original de PX4 se guarda una sola vez como control_net.*.px4.
 #
 # Uso: bash scripts/instalar_px4.sh [ruta/a/control_net] [~/PX4-Autopilot]
-#      (sin argumentos usa codigo/control_net.cpp y .hpp del paquete)
+#      (sin argumentos usa codigo/control_net_tarot650_busqueda.cpp y .hpp, la del Tarot)
 set -e
 PAQ="$(cd "$(dirname "$0")/.." && pwd)"
-RED="${1:-$PAQ/codigo/control_net}"
+RED="${1:-$PAQ/codigo/control_net_tarot650_busqueda}"
 PX4="${2:-$HOME/PX4-Autopilot}"
 
 python3 "$PAQ/scripts/generar_vehiculo.py" "$PX4"
-rm -rf "$PX4/Tools/simulation/gz/models/x500_busqueda"
-cp -r "$PAQ/models/x500_busqueda" "$PX4/Tools/simulation/gz/models/"
-
 AF="$PX4/ROMFS/px4fmu_common/init.d-posix/airframes"
-cp "$PAQ/px4/4099_gz_x500_busqueda" "$AF/"
-grep -q 4099_gz_x500_busqueda "$AF/CMakeLists.txt" || \
-    sed -i 's/^\(\s*\)4014_gz_x500_mono_cam_down$/&\n\14099_gz_x500_busqueda/' "$AF/CMakeLists.txt"
-grep -q 4099_gz_x500_busqueda "$AF/CMakeLists.txt" || { echo "No se pudo registrar el airframe"; exit 1; }
+for V in tarot650_busqueda:4100 x500_busqueda:4099; do
+    M=${V%%:*}; N=${V##*:}
+    rm -rf "$PX4/Tools/simulation/gz/models/$M"
+    cp -r "$PAQ/models/$M" "$PX4/Tools/simulation/gz/models/"
+    cp "$PAQ/px4/${N}_gz_$M" "$AF/"
+    grep -q "${N}_gz_$M" "$AF/CMakeLists.txt" || \
+        sed -i "s/^\(\s*\)4014_gz_x500_mono_cam_down$/&\n\1${N}_gz_$M/" "$AF/CMakeLists.txt"
+    grep -q "${N}_gz_$M" "$AF/CMakeLists.txt" || { echo "No se pudo registrar el airframe ${N}_gz_$M"; exit 1; }
+done
 
 NN="$PX4/src/modules/mc_nn_control"
 for ext in cpp hpp; do
@@ -40,4 +43,4 @@ grep -q /fmu/out/neural_control "$DDS" || sed -i 's#^publications:$#&\n\n  - top
 source /opt/ros/jazzy/setup.bash
 [ -d "$HOME/.venvs/px4" ] && export PATH="$HOME/.venvs/px4/bin:$PATH"
 cd "$PX4" && make px4_sitl_neural
-echo "Listo: PX4_SYS_AUTOSTART=4099 PX4_SIM_MODEL=gz_x500_busqueda"
+echo "Listo: PX4_SYS_AUTOSTART=4100 PX4_SIM_MODEL=gz_tarot650_busqueda (x500: 4099, gz_x500_busqueda)"

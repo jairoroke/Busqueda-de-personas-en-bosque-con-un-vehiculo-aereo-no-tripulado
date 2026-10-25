@@ -16,8 +16,9 @@ Publicaciones
 
 Ejecución: ros2 run mision localizador_node --ros-args -p use_sim_time:=true -p z_terreno:=0.0 -p sigma_px:=5.0
 
-Diferencias con el Código 8.4 del diseño original: la cámara de x500_busqueda está 25 cm
-debajo del centro de masa, bajo los patines (T_BC en mision/geometria.py); el
+Diferencias con el Código 8.4 del diseño original: la cámara está debajo del centro de
+masa, bajo los patines (parámetro z_camara: -0.24 m en el Tarot 650, -0.25 m en el x500;
+scripts/generar_vehiculo.py); el
 desfase entre el reloj de PX4 y el de la imagen se estima con el mínimo de
 (llegada - marca de PX4) en tiempo de simulación, no con el primer mensaje en
 tiempo de pared, para que no se desfase si Gazebo corre más lento que el tiempo
@@ -38,7 +39,7 @@ from px4_msgs.msg import VehicleOdometry
 from sensor_msgs.msg import CameraInfo
 from vision_msgs.msg import Detection2DArray, Detection3DArray, Detection3D, ObjectHypothesisWithPose
 
-from mision.geometria import covarianza, euler_de_R, localizar
+from mision.geometria import T_BC, covarianza, euler_de_R, localizar
 from mision.px4_util import QOS_PX4, ned_a_enu, R_enu_de_odometria
 
 
@@ -46,11 +47,13 @@ class Localizador(Node):
     def __init__(self):
         super().__init__("localizador")
         self.declare_parameter("z_terreno", 0.0)
+        self.declare_parameter("z_camara", float(T_BC[2]))      # cámara bajo base_link [m]
         self.declare_parameter("sigma_px", 5.0)
         self.declare_parameter("umbral_chi2", 9.21)          # chi^2 (2 g.l.) al 99 %
         self.declare_parameter("conf_min", 0.05)
         self.declare_parameter("angulo_max_deg", 60.0)        # rayos más tendidos se descartan
         self.z_t = self.get_parameter("z_terreno").value
+        self.t_bc = np.array([0.0, 0.0, self.get_parameter("z_camara").value])
         self.sigma_px = self.get_parameter("sigma_px").value
         self.chi2 = self.get_parameter("umbral_chi2").value
         self.conf_min = self.get_parameter("conf_min").value
@@ -122,14 +125,14 @@ class Localizador(Node):
             # Con la cámara hacia abajo se ve a la persona casi desde arriba: el centro de la
             # caja es el mejor punto de apoyo (el borde inferior del diseño original es para cámaras oblicuas).
             uv = np.array([det.bbox.center.position.x, det.bbox.center.position.y])
-            x = localizar(uv, xi, eta, self.K_inv, self.z_t)
+            x = localizar(uv, xi, eta, self.K_inv, self.z_t, t_bc=self.t_bc)
             if x is None:
                 continue
             altura = xi[2] - self.z_t
             if altura <= 0 or np.hypot(x[0] - xi[0], x[1] - xi[1]) > altura*self.tan_max:
                 continue                                      # rayo demasiado tendido
             Su = np.eye(2) * (self.sigma_px**2)
-            S, _ = covarianza(uv, xi, eta, self.K_inv, self.z_t, Sp, Se, Su)
+            S, _ = covarianza(uv, xi, eta, self.K_inv, self.z_t, Sp, Se, Su, t_bc=self.t_bc)
             if not np.all(np.isfinite(S)):
                 continue
             salida.detections.append(self.a_detection3d(x, S, conf))

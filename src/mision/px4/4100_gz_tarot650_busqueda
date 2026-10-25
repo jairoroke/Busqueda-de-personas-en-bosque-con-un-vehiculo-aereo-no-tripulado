@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# @name Gazebo Tarot 650 búsqueda de personas
+#
+# @type Quadrotor
+#
+# Tarot Ironman 650 (models/tarot650_busqueda, el mismo de la simulación de
+# incendios) con cámara hacia abajo y viento, y los parámetros del modo Neural
+# Control para la red 15-64-32-4 de codigo/nn_imitacion.py --vehiculo tarot650.
+# Lo instala scripts/instalar_px4.sh. Masa, inercias, kf y retardos de los
+# motores son supuestos (ver cuadrirotor_sim/scripts/generar_modelo.py).
+
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=tarot650_busqueda}
+
+. ${R}etc/init.d/rc.mc_defaults
+
+PX4_SIMULATOR=${PX4_SIMULATOR:=gz}
+PX4_GZ_WORLD=${PX4_GZ_WORLD:=default}
+
+param set-default SIM_GZ_EN 1
+
+# Quad "X": posición de los rotores en el cuerpo (NED, x adelante, y derecha)
+# y momento de reacción km = 0.016 m (positivo: gira en sentido antihorario).
+param set-default CA_AIRFRAME 0
+param set-default CA_ROTOR_COUNT 4
+param set-default CA_ROTOR0_PX 0.2198
+param set-default CA_ROTOR0_PY 0.212
+param set-default CA_ROTOR0_KM 0.016
+param set-default CA_ROTOR1_PX -0.2198
+param set-default CA_ROTOR1_PY -0.212
+param set-default CA_ROTOR1_KM 0.016
+param set-default CA_ROTOR2_PX 0.2198
+param set-default CA_ROTOR2_PY -0.212
+param set-default CA_ROTOR2_KM -0.016
+param set-default CA_ROTOR3_PX -0.2198
+param set-default CA_ROTOR3_PY 0.212
+param set-default CA_ROTOR3_KM -0.016
+
+# Salidas a los motores de Gazebo: 100-680 rad/s (w_max de los MN3508 con hélice de 15").
+param set-default SIM_GZ_EC_FUNC1 101
+param set-default SIM_GZ_EC_FUNC2 102
+param set-default SIM_GZ_EC_FUNC3 103
+param set-default SIM_GZ_EC_FUNC4 104
+param set-default SIM_GZ_EC_MIN1 100
+param set-default SIM_GZ_EC_MIN2 100
+param set-default SIM_GZ_EC_MIN3 100
+param set-default SIM_GZ_EC_MIN4 100
+param set-default SIM_GZ_EC_MAX1 680
+param set-default SIM_GZ_EC_MAX2 680
+param set-default SIM_GZ_EC_MAX3 680
+param set-default SIM_GZ_EC_MAX4 680
+
+# Vuelo estacionario: 2.25 kg -> w_h = 361 rad/s, salida (361-100)/580 = 0.45 y,
+# con la curva 0.8 x^2 + 0.2 x (THR_MDL_FAC), empuje normalizado 0.25.
+param set-default MPC_THR_HOVER 0.25
+param set-default THR_MDL_FAC 0.8
+
+# Sin estación de tierra: la misión la manda ROS 2 (si no, PX4 no arma).
+param set-default NAV_DLL_ACT 0
+
+# Modo Neural Control con la consigna de /fmu/in/trajectory_setpoint.
+param set-default MC_NN_EN 1
+param set-default MC_NN_MANL_CTRL 0
+
+# Mapeo de la acción a_i de la red a la velocidad del rotor. La red se entrenó
+# con f_i = (a_i + 1) f_max / 2, es decir w_i = w_max sqrt((a_i + 1)/2). El
+# módulo calcula rps = sqrt((a_i + 1)/C) con C = MC_NN_THRST_COEF/1e5, así que
+# C = 8 pi^2 / w_max^2 = 1.70754e-4 (w_max = 680 rad/s). Después normaliza las
+# rpm entre MC_NN_MIN_RPM y MC_NN_MAX_RPM, que deben ser los extremos del ESC
+# simulado (SIM_GZ_EC_MIN = 100 y SIM_GZ_EC_MAX = 680 rad/s, en rpm), y
+# aplica la curva 0.8 x^2 + 0.2 x, que PX4 deshace con THR_MDL_FAC = 0.8.
+param set-default MC_NN_THRST_COEF 17.0754
+param set-default MC_NN_MIN_RPM 955
+param set-default MC_NN_MAX_RPM 6494

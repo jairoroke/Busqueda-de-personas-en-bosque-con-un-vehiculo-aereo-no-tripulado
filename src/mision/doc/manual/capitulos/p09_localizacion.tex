@@ -16,7 +16,8 @@ cuerpo) y la del dron ($R$, que estima PX4):
 \begin{equation}
 r = R\,R_{BC}\,K^{-1}\begin{bmatrix}u\\v\\1\end{bmatrix},\qquad p_c = \xi + R\,t_{BC},
 \end{equation}
-donde $\xi$ es la posición del dron y $t_{BC} = (0, 0, -0.25)$~m la de la cámara (bajo los patines).
+donde $\xi$ es la posición del dron y $t_{BC} = (0, 0, -0.24)$~m la de la cámara en el Tarot 650
+(bajo los patines; en el x500, $-0.25$~m).
 El punto del suelo ($z = z_t = 0$) es
 \begin{equation}
 x = p_c + \lambda\,r,\qquad \lambda = \frac{z_t - p_{c,z}}{r_z}.
@@ -57,8 +58,8 @@ separa las tres fuentes:
 \centering\small
 \begin{tabular}{lccccc}
 \toprule
-\textbf{Caso} & \textbf{altura} & \textbf{RMSE Monte Carlo} & \textbf{por posición} & \textbf{por orientación} & \textbf{por detección} \\ \midrule
-nominal ($\sigma_p$ = 0.5 m, $\sigma_\eta$ = 0.5°, $\sigma_u$ = 5 px) & 20 m & 0.85 m & 0.92 & 0.31 & 0.26 \\
+\textbf{Caso} & \textbf{Altura} & \textbf{RMSE} & \textbf{Posición} & \textbf{Orientación} & \textbf{Detección} \\ \midrule
+nominal & 20 m & 0.85 m & 0.92 & 0.31 & 0.26 \\
 nominal & 30 m & 0.94 m & 0.92 & 0.47 & 0.39 \\
 nominal & 40 m & 1.05 m & 0.92 & 0.62 & 0.52 \\
 posición degradada ($\sigma_p$ = 2 m) & 30 m & 3.02 m & 3.34 & 0.47 & 0.39 \\
@@ -67,7 +68,8 @@ detección degradada ($\sigma_u$ = 20 px) & 30 m & 1.78 m & 0.92 & 0.47 & 1.57 \
 \bottomrule
 \end{tabular}
 \caption{Error de localización y su desglose (salida de \cod{sim_localizacion.py}; las tres últimas
-columnas son la contribución lineal en metros). Con un GPS normal domina la posición del dron.}
+columnas son la contribución lineal en metros). Nominal: $\sigma_p$ = 0.5~m, $\sigma_\eta$ = 0.5°,
+$\sigma_u$ = 5~px. Con un GPS normal domina la posición del dron.}
 \end{table}
 
 \begin{figure}[H]

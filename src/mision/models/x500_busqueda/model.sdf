@@ -317,7 +317,7 @@
         <pose>0 0 0.1 0 0 0</pose>
         <always_on>1</always_on>
         <update_rate>10</update_rate>
-        <topic>x500/lidar</topic>
+        <topic>dron/lidar</topic>
         <lidar>
           <scan>
             <horizontal><samples>120</samples><min_angle>-3.14159</min_angle><max_angle>3.14159</max_angle></horizontal>

@@ -5,11 +5,25 @@
     <self_collide>false</self_collide>
     <static>false</static>
     <link name="base_link">
-      <!-- IMU que lee ArduPilot (marco NED: girada 180 grados en x). -->
+      <!-- IMU que lee ArduPilot (marco NED: girada 180 grados en x), con ruido y sesgo
+           del orden de la IMU de una Pixhawk más la vibración del marco (supuestos). Sin
+           ruido el EKF integra la inercia casi perfecta. -->
       <sensor name="imu_ardupilot" type="imu">
         <pose degrees="true">0 0 0 180 0 0</pose>
         <always_on>1</always_on>
         <update_rate>1000</update_rate>
+        <imu>
+          <angular_velocity>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.004</stddev><bias_mean>0</bias_mean><bias_stddev>0.003</bias_stddev><dynamic_bias_stddev>0.0003</dynamic_bias_stddev><dynamic_bias_correlation_time>300</dynamic_bias_correlation_time></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.004</stddev><bias_mean>0</bias_mean><bias_stddev>0.003</bias_stddev><dynamic_bias_stddev>0.0003</dynamic_bias_stddev><dynamic_bias_correlation_time>300</dynamic_bias_correlation_time></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.004</stddev><bias_mean>0</bias_mean><bias_stddev>0.003</bias_stddev><dynamic_bias_stddev>0.0003</dynamic_bias_stddev><dynamic_bias_correlation_time>300</dynamic_bias_correlation_time></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.1</stddev><bias_mean>0</bias_mean><bias_stddev>0.04</bias_stddev><dynamic_bias_stddev>0.003</dynamic_bias_stddev><dynamic_bias_correlation_time>300</dynamic_bias_correlation_time></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.1</stddev><bias_mean>0</bias_mean><bias_stddev>0.04</bias_stddev><dynamic_bias_stddev>0.003</dynamic_bias_stddev><dynamic_bias_correlation_time>300</dynamic_bias_correlation_time></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.1</stddev><bias_mean>0</bias_mean><bias_stddev>0.04</bias_stddev><dynamic_bias_stddev>0.003</dynamic_bias_stddev><dynamic_bias_correlation_time>300</dynamic_bias_correlation_time></noise></z>
+          </linear_acceleration>
+        </imu>
       </sensor>
       <enable_wind>true</enable_wind>
       <inertial>
@@ -323,7 +337,7 @@
         <pose>0 0 0.1 0 0 0</pose>
         <always_on>1</always_on>
         <update_rate>10</update_rate>
-        <topic>x500/lidar</topic>
+        <topic>dron/lidar</topic>
         <lidar>
           <scan>
             <horizontal><samples>120</samples><min_angle>-3.14159</min_angle><max_angle>3.14159</max_angle></horizontal>
@@ -705,7 +719,9 @@
       <fdm_port_in>9002</fdm_port_in>
       <connectionTimeoutMaxCount>5</connectionTimeoutMaxCount>
       <lock_step>1</lock_step>
-      <no_time_sync>1</no_time_sync>
+      <!-- Con no_time_sync=1 el backend JSON pone AHRS_EKF_TYPE=10 y ArduCopter vuela con
+           la posición y la actitud verdaderas del simulador: el EKF no hace nada. -->
+      <no_time_sync>0</no_time_sync>
       <have_32_channels>0</have_32_channels>
       <modelXYZToAirplaneXForwardZDown degrees="true">0 0 0 180 0 0</modelXYZToAirplaneXForwardZDown>
       <gazeboXYZToNED degrees="true">0 0 0 180 0 90</gazeboXYZToNED>
@@ -713,7 +729,7 @@
       <control channel="0">
         <jointName>rotor_0_joint</jointName>
         <type>COMMAND</type>
-        <cmd_topic>/x500/ap/motor_0</cmd_topic>
+        <cmd_topic>/dron/ap/motor_0</cmd_topic>
         <useForce>0</useForce>
         <multiplier>1000.0</multiplier>
         <offset>0</offset>
@@ -723,7 +739,7 @@
       <control channel="1">
         <jointName>rotor_1_joint</jointName>
         <type>COMMAND</type>
-        <cmd_topic>/x500/ap/motor_1</cmd_topic>
+        <cmd_topic>/dron/ap/motor_1</cmd_topic>
         <useForce>0</useForce>
         <multiplier>1000.0</multiplier>
         <offset>0</offset>
@@ -733,7 +749,7 @@
       <control channel="2">
         <jointName>rotor_2_joint</jointName>
         <type>COMMAND</type>
-        <cmd_topic>/x500/ap/motor_2</cmd_topic>
+        <cmd_topic>/dron/ap/motor_2</cmd_topic>
         <useForce>0</useForce>
         <multiplier>1000.0</multiplier>
         <offset>0</offset>
@@ -743,7 +759,7 @@
       <control channel="3">
         <jointName>rotor_3_joint</jointName>
         <type>COMMAND</type>
-        <cmd_topic>/x500/ap/motor_3</cmd_topic>
+        <cmd_topic>/dron/ap/motor_3</cmd_topic>
         <useForce>0</useForce>
         <multiplier>1000.0</multiplier>
         <offset>0</offset>
@@ -752,12 +768,12 @@
       </control>
     </plugin>
     <plugin filename="SelectorMotores" name="mision::SelectorMotores">
-      <entrada>/x500/ap/motor_0</entrada>
-      <entrada>/x500/ap/motor_1</entrada>
-      <entrada>/x500/ap/motor_2</entrada>
-      <entrada>/x500/ap/motor_3</entrada>
-      <red>/x500/red/motor_speed</red>
-      <modo>/x500/controlador</modo>
+      <entrada>/dron/ap/motor_0</entrada>
+      <entrada>/dron/ap/motor_1</entrada>
+      <entrada>/dron/ap/motor_2</entrada>
+      <entrada>/dron/ap/motor_3</entrada>
+      <red>/dron/red/motor_speed</red>
+      <modo>/dron/controlador</modo>
       <salida>/x500_busqueda_0/command/motor_speed</salida>
       <tiempo_max>0.05</tiempo_max>
     </plugin>
@@ -765,7 +781,7 @@
       <odom_frame>odom</odom_frame>
       <robot_base_frame>base_link</robot_base_frame>
       <odom_publish_frequency>400</odom_publish_frequency>
-      <odom_topic>/x500/odometria</odom_topic>
+      <odom_topic>/dron/odometria</odom_topic>
       <dimensions>3</dimensions>
     </plugin>
   </model>

@@ -1,8 +1,10 @@
 """Simulación integrada de la búsqueda de personas.
 
 Genera el bosque, arranca Gazebo con él (sin el server.config de PX4), el agente
-uXRCE-DDS, PX4 SITL (px4_sitl_neural, airframe 4099_gz_x500_busqueda) conectado
+uXRCE-DDS, PX4 SITL (px4_sitl_neural, airframe 4100_gz_tarot650_busqueda) conectado
 a ese mundo, el puente Gazebo-ROS 2, el detector, el localizador y la misión.
+El vehículo es el Tarot 650 (vehiculo:=tarot650); vehiculo:=x500 usa el x500 de PX4
+(airframe 4099_gz_x500_busqueda), con el que se hicieron las primeras corridas.
 Cuando la misión termina (escribe `salida`) se cierra todo.
 
     ros2 launch mision simulacion.launch.py
@@ -13,7 +15,7 @@ Cuando la misión termina (escribe `salida`) se cierra todo.
 Con piloto:=ardupilot vuela ArduCopter SITL (GUIDED por MAVLink, mision_ardupilot) y
 controlador:=red usa controlador_red + SelectorMotores en lugar del módulo mc_nn_control.
 
-Argumentos: oclusion (baja|media|alta), iluminacion (alta|baja), viento (no|si), semilla,
+Argumentos: vehiculo (tarot650|x500), oclusion (baja|media|alta), iluminacion (alta|baja), viento (no|si), semilla,
 personas (número; vacío = 1 a 3), estrategia (fija|reobs), controlador (cascada|red), piloto (px4|ardupilot),
 altura, velocidad, lado, pesos (modelo YOLO), umbral, gui, salida, px4 (ruta de PX4-Autopilot),
 latencia_extra_ms y saltar_cuadros (degradación del detector, pregunta P3).
@@ -39,8 +41,13 @@ from launch.events import Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+# Por vehículo: airframe de PX4, velocidad máxima de los rotores y altura de la cámara bajo
+# base_link (scripts/generar_vehiculo.py).
+VEHICULOS = {'tarot650': dict(airframe='4100', w_max=680.0, z_camara=-0.24),
+             'x500': dict(airframe='4099', w_max=1000.0, z_camara=-0.25)}
+
 ARGUMENTOS = {
-    'oclusion': 'media', 'iluminacion': 'alta', 'viento': 'no', 'semilla': '1', 'personas': '',
+    'vehiculo': 'tarot650', 'oclusion': 'media', 'iluminacion': 'alta', 'viento': 'no', 'semilla': '1', 'personas': '',
     'estrategia': 'fija', 'controlador': 'cascada', 'altura': '30.0', 'velocidad': '3.0', 'lado': '120.0',
     'pesos': '', 'umbral': '0.25', 'gui': 'true', 'salida': os.path.expanduser('~/resultados/corrida.json'),
     'px4': os.path.expanduser('~/PX4-Autopilot'), 'latencia_extra_ms': '0.0', 'saltar_cuadros': '0',
@@ -98,12 +105,16 @@ def preparar(context):
     ardupilot = a['piloto'] == 'ardupilot'
     if a['piloto'] not in ('px4', 'ardupilot'):
         raise RuntimeError(f"piloto:={a['piloto']}: debe ser px4 o ardupilot")
+    if a['vehiculo'] not in VEHICULOS:
+        raise RuntimeError(f"vehiculo:={a['vehiculo']}: debe ser {' o '.join(VEHICULOS)}")
+    veh = VEHICULOS[a['vehiculo']]
+    modelo = f"{a['vehiculo']}_busqueda"
     # Con ArduPilot la física corre a 1 kHz (lo que espera el SITL por JSON) y el vehículo va en el mundo.
     nombre, sdf, verdad = generar_mundo.generar(a['oclusion'], a['iluminacion'], a['viento'], int(a['semilla']),
                                                 lado=float(a['lado']),
                                                 n_personas=int(a['personas']) if a['personas'] else None,
                                                 paso=0.001 if ardupilot else 0.004,
-                                                vehiculo='x500_busqueda_ardupilot' if ardupilot else None)
+                                                vehiculo=modelo + '_ardupilot' if ardupilot else None)
     ruta_mundo = os.path.join(tmp, nombre + '.sdf')
     ruta_verdad = os.path.join(tmp, f'personas_{nombre}.json')
     with open(ruta_mundo, 'w') as f:
@@ -119,13 +130,14 @@ def preparar(context):
     px4 = os.path.expanduser(a['px4'])
     rootfs = os.path.join(px4, 'build', 'px4_sitl_neural', 'rootfs')
     ap = os.path.expanduser(a['ardupilot'])
-    requisitos = [(os.path.join(px4, 'Tools/simulation/gz/models/x500_base'), 'modelo x500 de PX4 (también lo usa ArduPilot)')]
+    requisitos = [(os.path.join(px4, 'Tools/simulation/gz/models/x500_base'), 'modelo x500 de PX4 (sus sensores también los usa el Tarot)'),
+                  (os.path.join(share, 'models', modelo), f'vehículo {modelo} (scripts/generar_vehiculo.py)')]
     if ardupilot:
         requisitos += [(os.path.join(ap, 'build', 'sitl', 'bin', 'arducopter'), 'ArduCopter SITL compilado'),
                        (a['python_ardupilot'], 'Python de ArduPilot (pymavlink)')]
     else:
         requisitos += [(os.path.join(rootfs, '..', 'bin', 'px4'), 'PX4 compilado (make px4_sitl_neural)'),
-                       (os.path.join(px4, 'Tools/simulation/gz/models/x500_busqueda'), 'vehículo (scripts/instalar_px4.sh)')]
+                       (os.path.join(px4, 'Tools/simulation/gz/models', modelo), 'vehículo en PX4 (scripts/instalar_px4.sh)')]
     for ruta, que in requisitos:
         if not os.path.exists(ruta):
             raise RuntimeError(f'No se encontró el {que}: {ruta}')
@@ -142,18 +154,18 @@ def preparar(context):
 
     # 3. Agente uXRCE-DDS y PX4 conectado al mundo ya abierto (PX4_GZ_STANDALONE)
     xrce = ExecuteProcess(cmd=[agente, 'udp4', '-p', '8888'], output='log', name='agente_xrce')
-    env_px4 = {'PX4_GZ_STANDALONE': '1', 'PX4_SYS_AUTOSTART': '4099', 'PX4_SIM_MODEL': 'gz_x500_busqueda',
+    env_px4 = {'PX4_GZ_STANDALONE': '1', 'PX4_SYS_AUTOSTART': veh['airframe'], 'PX4_SIM_MODEL': f'gz_{modelo}',
                'PX4_GZ_WORLD': nombre, 'GZ_IP': '127.0.0.1'}
     px4_proc = ExecuteProcess(cmd=['../bin/px4', '-d'], cwd=rootfs, additional_env=env_px4, output='log', name='px4',
                               sigterm_timeout='3', sigkill_timeout='3')
 
     # 4. Puente Gazebo -> ROS 2 (cámara, reloj) y ROS 2 -> Gazebo (imagen anotada para el panel)
-    cam = f'/world/{nombre}/model/x500_busqueda_0/link/camera_link/sensor/imager'
+    cam = f'/world/{nombre}/model/{modelo}_0/link/camera_link/sensor/imager'
     puente = Node(package='ros_gz_bridge', executable='parameter_bridge', name='puente', output='log',
                   arguments=[f'{cam}/image@sensor_msgs/msg/Image[gz.msgs.Image',
                              f'{cam}/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
                              f'/world/{nombre}/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-                             '/x500/lidar/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+                             '/dron/lidar/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
                              '/camera_yolo@sensor_msgs/msg/Image]gz.msgs.Image'],
                   remappings=[(f'{cam}/image', '/camera'), (f'{cam}/camera_info', '/camera_info'),
                               (f'/world/{nombre}/clock', '/clock')])
@@ -165,7 +177,7 @@ def preparar(context):
              '-p', f'saltar_cuadros:={a["saltar_cuadros"]}', '-p', f'anotar:={str(gui).lower()}',
              '-p', 'use_sim_time:=true'], output='screen', name='detector')
     localizador = Node(package='mision', executable='localizador_node', output='screen',
-                       parameters=[{'use_sim_time': True}])
+                       parameters=[{'use_sim_time': True, 'z_camara': veh['z_camara']}])
     archivo_mapa = f'/tmp/mision_{os.getuid()}/mapa_busqueda.json'
     if os.path.exists(archivo_mapa):
         os.remove(archivo_mapa)
@@ -184,7 +196,7 @@ def preparar(context):
         d = os.path.join(ap, 'Tools', 'autotest', 'default_params')
         sitl = [os.path.join(ap, 'build', 'sitl', 'bin', 'arducopter'), '-w', '--model', 'JSON', '--speedup', '1',
                 '--slave', '0', '--defaults', ','.join([os.path.join(d, 'copter.parm'), os.path.join(d, 'gazebo-iris.parm'),
-                                                       os.path.join(share, 'config', 'ardupilot', 'x500.parm')]),
+                                                       os.path.join(share, 'config', 'ardupilot', f"{a['vehiculo']}.parm")]),
                 '--sim-address=127.0.0.1', '-I0']
         from mision.geo import ORIGEN                        # home = origen del mundo: el GPS coincide con los avisos
         sitl += ['--home', f'{ORIGEN[0]},{ORIGEN[1]},{ORIGEN[2]},0']
@@ -195,9 +207,9 @@ def preparar(context):
                                 + sum((['-p', x] for x in args), []), output='screen', name='mision')
         piloto = [sitl_proc]
         if a['controlador'] == 'red':
-            pesos_red = a['pesos_red'] or os.path.join(share, 'codigo', 'pesos_nn_x500_busqueda.npz')
+            pesos_red = a['pesos_red'] or os.path.join(share, 'codigo', f'pesos_nn_{modelo}.npz')
             piloto.append(Node(package='mision', executable='controlador_red', output='screen',
-                               parameters=[{'pesos': pesos_red}]))
+                               parameters=[{'pesos': pesos_red, 'w_max': veh['w_max']}]))
     fin = RegisterEventHandler(OnProcessExit(target_action=mision, on_exit=[EmitEvent(event=Shutdown(reason='misión terminada'))]))
     # Estación de tierra: MAVProxy con consola, mapa y la trayectoria (sólo con GUI)
     gcs = []

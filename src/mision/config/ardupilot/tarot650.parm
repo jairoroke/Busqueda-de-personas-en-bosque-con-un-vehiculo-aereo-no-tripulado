@@ -1,0 +1,38 @@
+# Parámetros de ArduCopter para tarot650_busqueda_ardupilot (se cargan sobre
+# Tools/autotest/default_params/gazebo-iris.parm). Los de vuelo son los del
+# mismo Tarot en la simulación de incendios (cuadrirotor_sim/config/ardupilot/tarot650.parm).
+# Quad en "X"; las salidas 1-4 son los rotor_0..3 (mismo orden que PX4).
+FRAME_CLASS     1
+FRAME_TYPE      1
+# Salidas 1000-2000 us -> 0-680 rad/s lineal; el empuje crece con w^2, así que
+# la curva de empuje es cuadrática pura.
+MOT_PWM_MIN     1000
+MOT_PWM_MAX     2000
+MOT_THST_EXPO   1.0
+MOT_SPIN_ARM    0.08
+MOT_SPIN_MIN    0.12
+# Vuelo estacionario: 2.25 kg -> w_h = 361 rad/s, (361/680)^2 = 0.28 del empuje máximo.
+MOT_THST_HOVER  0.28
+MOT_HOVER_LEARN 2
+# Lazos de tasa más suaves que el Iris: el Tarot tiene relación empuje/peso
+# de ~3.6 y motores más lentos (30-50 ms).
+ATC_RAT_RLL_P   0.08
+ATC_RAT_RLL_I   0.08
+ATC_RAT_RLL_D   0.002
+ATC_RAT_PIT_P   0.08
+ATC_RAT_PIT_I   0.08
+ATC_RAT_PIT_D   0.002
+ATC_RAT_YAW_P   0.2
+ATC_RAT_YAW_I   0.02
+# Volar con el EKF3, no con el estado verdadero del simulador (10). Requiere
+# no_time_sync=0 en el modelo (scripts/generar_vehiculo.py).
+AHRS_EKF_TYPE   3
+EK3_ENABLE      1
+# La misión la manda ROS 2 por MAVLink: sin radio ni estación de tierra.
+FS_THR_ENABLE   0
+FS_GCS_ENABLE   0
+# Velocidades de la misión (cm/s): como el barrido de PX4 (3 m/s).
+WPNAV_SPEED     300
+WPNAV_SPEED_UP  300
+WPNAV_SPEED_DN  150
+LAND_SPEED      70

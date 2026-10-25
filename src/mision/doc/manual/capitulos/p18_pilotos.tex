@@ -9,7 +9,7 @@ de tierra (MAVProxy) con sus ventanas y su mapa.
 \section{Con PX4 (\texorpdfstring{\texttt{piloto:=px4}}{piloto:=px4}, por omisión)}
 
 El \emph{launch} abre Gazebo con el bosque (sin la configuración de PX4), arranca el agente uXRCE-DDS en
-el puerto 8888 y PX4 SITL (\cod{px4_sitl_neural}, \emph{airframe} 4099) conectado a ese Gazebo
+el puerto 8888 y PX4 SITL (\cod{px4_sitl_neural}, \emph{airframe} 4100, \cod{4100_gz_tarot650_busqueda}; con \cod{vehiculo:=x500}, el 4099) conectado a ese Gazebo
 (\cod{PX4_GZ_STANDALONE}). La misión habla con PX4 por ROS~2: lee \cod{/fmu/out/vehicle_odometry} y
 \cod{/fmu/out/vehicle_status_v1}, y publica \cod{/fmu/in/trajectory_setpoint},
 \cod{/fmu/in/offboard_control_mode} y comandos (\cod{/fmu/in/vehicle_command}). La red corre dentro de
@@ -17,19 +17,46 @@ PX4, en \cod{mc_nn_control}.
 
 \section{Con ArduPilot (\texorpdfstring{\texttt{piloto:=ardupilot}}{piloto:=ardupilot})}
 
+El mismo bosque, cámara, detector, localizador y lógica de misión, pilotados por ArduCopter 4.7.2 SITL:
 \begin{itemize}
+  \item El vehículo es \cod{tarot650_busqueda_ardupilot} (generado por \cod{scripts/generar_vehiculo.py}):
+        el mismo Tarot con \cod{ArduPilotPlugin} (salidas de 1000--2000~µs $\rightarrow$ 0--680~rad/s, mismo
+        orden de motores que PX4), una IMU para ArduPilot, \cod{OdometryPublisher} a 400~Hz y el sistema
+        \cod{SelectorMotores} (paquete \cod{mision_gz_plugins}). El mundo corre a 1~kHz e incluye el
+        vehículo.
   \item ArduCopter 4.7.2 se lanza directo (sin MAVProxy ni ventana propia) con los parámetros de
-        \cod{config/ardupilot/x500.parm}, el \emph{home} en el origen del mundo y el vehículo dentro del
-        mundo a 1~kHz.
+        \cod{config/ardupilot/tarot650.parm} (los parámetros de vuelo del Tarot: lazos de tasa más
+        suaves que los del Iris de ArduPilot, porque sus motores son más lentos) y el \emph{home} en el
+        origen del mundo.
   \item \cod{mision_ardupilot} (una subclase de la misión) se conecta por TCP 5760 con MAVLink, vuela en
         GUIDED con \cod{SET_POSITION_TARGET_LOCAL_NED} y publica el estimado del EKF de ArduPilot en
         \cod{/fmu/out/vehicle_odometry}, para que el localizador sea exactamente el mismo.
   \item Con \cod{controlador:=red}, la red corre en \cod{controlador_red} (ROS~2 + gz-transport,
         $\sim$330~Hz, 70~µs por paso) con el estado de Gazebo y manda
-        $\omega_i = 1000\sqrt{(a_i+1)/2}$~rad/s. La misión publica ``red'' en \cod{/x500/controlador} y
-        \cod{SelectorMotores} deja pasar esos comandos; ArduPilot sigue estimando, recibe las mismas
-        consignas y recupera los motores para aterrizar, o si la red deja de publicar 50~ms.
+        $\omega_i = \omega_{max}\sqrt{(a_i+1)/2}$~rad/s ($\omega_{max} = 680$~rad/s en el Tarot). La misión
+        publica ``red'' en \cod{/dron/controlador} y \cod{SelectorMotores} deja pasar esos comandos en
+        lugar de los de ArduPilot, que sigue estimando, recibe las mismas consignas y recupera los motores
+        para aterrizar, o si la red deja de publicar 50~ms.
 \end{itemize}
+
+\subsection{ArduPilot vuela con su EKF3}
+
+ArduCopter vuela con su propio estimador, el \textbf{EKF3} (\cod{AHRS_EKF_TYPE 3} en
+\cod{tarot650.parm}): calcula la posición y la orientación a partir de la IMU, el GPS, el barómetro y
+el magnetómetro simulados, igual que en un dron real. Para eso el modelo lleva \cod{no_time_sync=0}.
+Con \cod{no_time_sync=1} (lo que traen los modelos de \cod{ardupilot_gazebo}) el enlace JSON entre
+Gazebo y ArduPilot fuerza \cod{AHRS_EKF_TYPE=10} y ArduPilot vuela con la posición y la actitud
+\emph{verdaderas} del simulador. La IMU de ArduPilot tiene ruido y sesgo supuestos (giróscopo
+0.004~rad/s, acelerómetro 0.1~m/s$^2$): sin ruido, el EKF tendría una tarea mucho más fácil que en un
+dron real.
+
+\begin{aviso}
+Las corridas con ArduPilot anteriores al 24 de octubre usaban el estado verdadero del simulador, no el
+EKF: el paquete tenía \cod{no_time_sync=1}. Tenlo en cuenta al compararlas con las nuevas o con las de
+PX4, que vuela con su propio estimador (EKF2).
+\end{aviso}
+
+Para conectar una estación de tierra a ArduPilot: \cod{mavproxy.py --master tcp:127.0.0.1:5762}.
 
 \section{La estación de tierra: MAVProxy}
 

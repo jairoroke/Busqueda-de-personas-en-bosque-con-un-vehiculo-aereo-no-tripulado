@@ -18,9 +18,9 @@ L.append(f"% generado por herramientas/tabla_campana.py con {len(filas)} corrida
 L.append(f"Corridas analizadas: {len(filas)} (semillas {semillas[0]}--{semillas[-1]}).\n" if filas else "")
 
 # medias por oclusión, estrategia y controlador
-L.append("\\begin{table}[H]\\centering\\small\n\\begin{tabular}{lllrrrrrrr}\n\\toprule\n"
-         "\\textbf{Control} & \\textbf{Oclusión} & \\textbf{Estrategia} & $n$ & \\textbf{Encontradas} & "
-         "\\textbf{FA} & \\textbf{FA$_{10}$} & \\textbf{Avisos} & \\textbf{Duración (s)} & \\textbf{RMSE (m)} \\\\ \\midrule\n")
+L.append("\\begin{table}[H]\\centering\\small\\setlength{\\tabcolsep}{4pt}\n\\begin{tabular}{lllrrrrrrr}\n\\toprule\n"
+         "\\textbf{Control} & \\textbf{Oclusión} & \\textbf{Estrategia} & $n$ & \\textbf{Encontr.} & "
+         "\\textbf{FA} & \\textbf{FA$_{10}$} & \\textbf{Avisos} & \\textbf{Dur.\\ (s)} & \\textbf{RMSE (m)} \\\\ \\midrule\n")
 for ctl in ["cascada", "red"]:
     for oc in ["baja", "media", "alta"]:
         for est in ["fija", "reobs"]:

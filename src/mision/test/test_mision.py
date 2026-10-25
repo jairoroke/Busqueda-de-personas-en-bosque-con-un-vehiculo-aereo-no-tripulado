@@ -55,15 +55,18 @@ def test_covarianza_crece_con_la_altura():
     assert tr[0] < tr[1] < tr[2]
 
 
-def test_camara_del_vehiculo_coincide_con_la_geometria():
-    """T_BC del localizador = pose de la cámara en models/x500_busqueda (generar_vehiculo.py)."""
-    ruta = os.path.join(RAIZ, 'models', 'x500_busqueda', 'model.sdf')
+@pytest.mark.parametrize('vehiculo, z_camara', [('tarot650', -0.24), ('x500', -0.25)])
+def test_camara_del_vehiculo_coincide_con_la_geometria(vehiculo, z_camara):
+    """La pose de la cámara en models/<vehiculo>_busqueda (generar_vehiculo.py) es la que recibe el
+    localizador (z_camara en el launch); T_BC por omisión es la del Tarot."""
+    ruta = os.path.join(RAIZ, 'models', f'{vehiculo}_busqueda', 'model.sdf')
     if not os.path.exists(ruta):
         pytest.skip('falta generar el vehículo (scripts/generar_vehiculo.py)')
     m = re.search(r'<uri>model://mono_cam</uri>\s*<pose>([-\d. ]+)</pose>', open(ruta).read())
     x, y, z, r, p, yaw = map(float, m.group(1).split())
-    np.testing.assert_allclose([x, y, z], T_BC)
+    np.testing.assert_allclose([x, y, z], [0, 0, z_camara])
     assert abs(p - math.pi/2) < 1e-3 and r == 0 and yaw == 0
+    np.testing.assert_allclose(T_BC, [0, 0, -0.24])
 
 
 def test_metricas():
@@ -76,18 +79,27 @@ def test_metricas():
     assert distancia_a_ruta([5, 3, 30], [[0, 0, 30], [10, 0, 30]]) == pytest.approx(3.0)
 
 
-def parametros_airframe():
-    texto = open(os.path.join(RAIZ, 'px4', '4099_gz_x500_busqueda')).read()
+AIRFRAMES = {'tarot650': ('4100_gz_tarot650_busqueda', 680.0, 100.0),
+             'x500': ('4099_gz_x500_busqueda', 1000.0, 150.0)}
+
+
+def parametros_airframe(archivo):
+    texto = open(os.path.join(RAIZ, 'px4', archivo)).read()
     return {k: float(v) for k, v in re.findall(r'param set-default (\w+) ([-\d.]+)', texto)}
 
 
-def test_mapeo_de_la_red_en_px4():
-    """La cadena de PX4 (RescaleActions de mc_nn_control, THR_MDL_FAC y el ESC simulado de 150 a 1000 rad/s)
-    debe dar la misma velocidad de rotor que el simulador de nn_imitacion.py: w = w_max sqrt((a + 1)/2)."""
-    p = parametros_airframe()
+@pytest.mark.parametrize('vehiculo', AIRFRAMES)
+def test_mapeo_de_la_red_en_px4(vehiculo):
+    """La cadena de PX4 (RescaleActions de mc_nn_control, THR_MDL_FAC y el ESC simulado) debe dar la
+    misma velocidad de rotor que el simulador de nn_imitacion.py: w = w_max sqrt((a + 1)/2)."""
+    archivo, wmax, ec_min = AIRFRAMES[vehiculo]
+    p = parametros_airframe(archivo)
     C, rmin, rmax, fac = p['MC_NN_THRST_COEF'] / 1e5, p['MC_NN_MIN_RPM'], p['MC_NN_MAX_RPM'], p['THR_MDL_FAC']
-    wmax, ec_min, ec_max = 1000.0, 150.0, 1000.0
-    for a in np.linspace(-0.85, 1.0, 40):
+    ec_max = wmax
+    if 'SIM_GZ_EC_MIN1' in p:
+        assert (p['SIM_GZ_EC_MIN1'], p['SIM_GZ_EC_MAX1']) == (ec_min, ec_max)
+    a_min = 2 * (ec_min / wmax)**2 - 1 + 0.02          # debajo, el ESC simulado satura en EC_MIN
+    for a in np.linspace(a_min, 1.0, 40):
         # mc_nn_control.cpp, RescaleActions
         rpm = math.sqrt((a + 1.0) / C) * 60.0
         n = (rpm * 2.0 - rmax - rmin) / (rmax - rmin)

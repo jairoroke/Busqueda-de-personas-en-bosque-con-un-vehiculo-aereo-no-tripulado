@@ -178,7 +178,9 @@ def generar(oclusion, iluminacion, viento, semilla, lado=120.0, n_personas=None,
         personas.append({"id": j, "x": float(x), "y": float(y), "pose": pose, "modelo": modelo,
                          "yaw": float(yaw), "bajo_copa": bool(bajo)})
     if vehiculo:
-        partes.append(INCLUDE.format(modelo=vehiculo, nombre="x500_busqueda_0", x=0, y=0, z=0.24, roll=0, pitch=0, yaw=0))
+        # Con el nombre que le pondría PX4 (<vehiculo>_busqueda_0), para que los tópicos de la cámara coincidan.
+        partes.append(INCLUDE.format(modelo=vehiculo, nombre=vehiculo.replace("_ardupilot", "") + "_0",
+                                     x=0, y=0, z=0.24, roll=0, pitch=0, yaw=0))
     partes.append("  </world>\n</sdf>\n")
     verdad = {"mundo": nombre, "oclusion": oclusion, "iluminacion": iluminacion, "viento": viento,
               "semilla": semilla, "lado_m": lado, "n_arboles": len(arboles),
@@ -197,7 +199,7 @@ if __name__ == "__main__":
     ap.add_argument("--lado", type=float, default=120.0)
     ap.add_argument("--personas", type=int, default=None, help="número de personas (por omisión 1 a 3)")
     ap.add_argument("--paso", type=float, default=0.004, help="paso de la física [s] (0.001 con ArduPilot)")
-    ap.add_argument("--vehiculo", default=None, help="modelo a incluir en el origen (x500_busqueda_ardupilot)")
+    ap.add_argument("--vehiculo", default=None, help="modelo a incluir en el origen (tarot650_busqueda_ardupilot)")
     ap.add_argument("--salida", default=".")
     a = ap.parse_args()
     nombre, sdf, verdad = generar(a.oclusion, a.iluminacion, a.viento, a.semilla, a.lado, a.personas,

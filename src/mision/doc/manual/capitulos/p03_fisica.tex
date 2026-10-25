@@ -30,27 +30,28 @@ $v = (v_x, v_y, v_z)$. Posición, velocidad, aceleración, fuerza y velocidad an
 
 \section{Empuje: el cuadrado de la velocidad}
 
-El empuje de una hélice es aproximadamente $f = k_f\,\omega^2$. En el x500, $k_f = 8.54858\times
-10^{-6}$~N/(rad/s)$^2$ y $\omega_{max} = 1000$~rad/s, así que cada motor da hasta 8.55~N. Cada hélice
+El empuje de una hélice es aproximadamente $f = k_f\,\omega^2$. En el Tarot 650, $k_f = 4.24\times
+10^{-5}$~N/(rad/s)$^2$ y $\omega_{max} = 680$~rad/s, así que cada motor da hasta 19.6~N. Cada hélice
 produce además un par de arrastre $k_m f$ ($k_m = 0.016$~m) que intenta girar al dron.
 
 \begin{recuerda}
-Los motores no cambian de velocidad al instante: en el x500 simulado tardan $\approx$12.5~ms en
-acelerar y 25~ms en frenar. Ese retardo, aunque pequeño, limita qué tan agresivo puede ser el control.
+Los motores no cambian de velocidad al instante: en el Tarot simulado tienen constantes de tiempo de
+0.03~s al acelerar y 0.05~s al frenar (en el x500, 12.5 y 25~ms). Ese retardo, aunque pequeño, limita qué tan agresivo puede ser el control.
 \end{recuerda}
 
 \section{Inercia de rotación y par}
 
 Para girar importa el \textbf{momento de inercia} $J$: cuánto se resiste un cuerpo a cambiar su giro.
-El x500 tiene 0.0217, 0.0217 y 0.040~kg\,m$^2$ en sus tres ejes. Lo que hace girar es un \textbf{par}
+El Tarot 650 completo (con sus rotores) tiene 0.0341, 0.0361 y 0.0660~kg\,m$^2$ en sus tres ejes. Lo que hace girar es un \textbf{par}
 $\tau$, una fuerza aplicada a cierta distancia del centro:
 \begin{equation}
 J\,\dot\omega = \tau - \omega\times J\omega .
 \end{equation}
 
 \begin{leccion}
-Un detalle de apenas 0.7~mm tuvo efectos visibles. La cámara (50~g) tiene su centro de masa a 3~cm del
-eje y corre el del dron completo 0.7~mm. Eso produce un par pequeño pero constante que el controlador
+Un detalle de menos de un milímetro tuvo efectos visibles. La cámara (50~g) tiene su centro de masa a
+3~cm del eje y corre el del dron completo 0.7~mm en el x500, el vehículo de las primeras corridas
+(0.67~mm en el Tarot). Eso produce un par pequeño pero constante que el controlador
 neuronal original no sabía compensar: el dron se quedaba inclinado $\approx$1° y a $\approx$0.2~m del
 punto deseado (capítulo~\ref{cap:control-neuronal}).
 \end{leccion}
@@ -103,8 +104,10 @@ A = \begin{bmatrix}1&1&1&1\\ y_i & \cdots\\ -x_i & \cdots\\ -s_ik_m&\cdots\end{b
 \end{align*}
 \end{tcolorbox}
 
-\cod{codigo/sim_modelo.py} simula este modelo con el x500 y el control base, y reproduce las cifras
-del diseño original del proyecto:
+\cod{codigo/sim_modelo.py} simula este modelo con el control base y reproduce las cifras del diseño
+original del proyecto. Ese programa usa los parámetros del \textbf{x500} de PX4 (2.0~kg,
+$k_f = 8.54858\times10^{-6}$, $\omega_{max} = 1000$~rad/s), no los del Tarot: las cifras y la figura
+siguientes son del x500.
 
 \begin{figure}[H]
 \centering

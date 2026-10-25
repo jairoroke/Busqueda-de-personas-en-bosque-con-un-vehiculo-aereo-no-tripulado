@@ -38,8 +38,9 @@ python3 -m venv ~/venv-mision
 
 # 5. Red, vehículo y airframe en PX4, y compilación de px4_sitl_neural
 cd ~/ros2_ws/src/mision/codigo
-python3 nn_imitacion.py --masa 2.114 --salida pesos_nn_x500_busqueda.npz --figura ../imagenes/nn_imitacion_x500_busqueda.pdf
-~/venv-mision/bin/python exportar_tflite.py --pesos pesos_nn_x500_busqueda.npz --salida control_net_x500_busqueda
-bash ../scripts/instalar_px4.sh ~/ros2_ws/src/mision/codigo/control_net_x500_busqueda
+python3 nn_imitacion.py --vehiculo tarot650 --masa 2.25 --com 0.00067 0.00067 --adelanto \
+    --salida pesos_nn_tarot650_busqueda.npz --figura ../imagenes/nn_imitacion_tarot650_busqueda.pdf
+~/venv-mision/bin/python exportar_tflite.py --pesos pesos_nn_tarot650_busqueda.npz --salida control_net_tarot650_busqueda
+bash ../scripts/instalar_px4.sh ~/ros2_ws/src/mision/codigo/control_net_tarot650_busqueda
 
 # 6. Prueba rápida: ros2 launch mision simulacion.launch.py   (ver README.md)

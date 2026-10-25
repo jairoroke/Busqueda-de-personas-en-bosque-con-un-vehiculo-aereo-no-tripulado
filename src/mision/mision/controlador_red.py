@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 controlador_red.py -- La red 15-64-32-4 de codigo/nn_imitacion.py como
-controlador del x500 cuando lo pilota ArduPilot SITL (ArduPilot no tiene un
+controlador del dron cuando lo pilota ArduPilot SITL (ArduPilot no tiene un
 módulo equivalente a mc_nn_control de PX4).
 
-Cada mensaje de odometría de Gazebo (/x500/odometria, 400 Hz, la frecuencia de
+Cada mensaje de odometría de Gazebo (/dron/odometria, 400 Hz, la frecuencia de
 entrenamiento) arma las mismas 15 entradas que el módulo de PX4 (convención
 ENU-FLU: error de posición, dos primeras filas de R, velocidad inercial y
 velocidad angular del cuerpo), evalúa la red en numpy y publica las velocidades de
 rotor w_i = w_max sqrt((a_i + 1)/2), las del simulador del entrenamiento, en
-/x500/red/motor_speed (gz.msgs.Actuators). SelectorMotores sólo las deja pasar
+/dron/red/motor_speed (gz.msgs.Actuators). SelectorMotores sólo las deja pasar
 cuando la misión pide "red"; si la consigna deja de llegar, no publica y el
 selector regresa a ArduPilot.
 
@@ -38,8 +38,8 @@ from mision.px4_util import R_de_cuaternion
 class ControladorRed(Node):
     def __init__(self):
         super().__init__("controlador_red")
-        for nombre, valor in [("pesos", ""), ("w_max", 1000.0), ("odometria", "/x500/odometria"),
-                              ("salida", "/x500/red/motor_speed"), ("consigna_max_s", 0.5)]:
+        for nombre, valor in [("pesos", ""), ("w_max", 1000.0), ("odometria", "/dron/odometria"),
+                              ("salida", "/dron/red/motor_speed"), ("consigna_max_s", 0.5)]:
             self.declare_parameter(nombre, valor)
         g = lambda n: self.get_parameter(n).value
         z = np.load(g("pesos"))
@@ -49,7 +49,7 @@ class ControladorRed(Node):
         self.lock = threading.Lock()
         self.consigna = None; self.t_consigna = 0.0
         self.n = 0; self.t_inferencia = 0.0
-        self.create_subscription(PointStamped, "/x500/consigna", self.cb_consigna, 10)
+        self.create_subscription(PointStamped, "/dron/consigna", self.cb_consigna, 10)
         self.gz = GzNode()
         self.pub = self.gz.advertise(g("salida"), Actuators)
         self.gz.subscribe(Odometry, g("odometria"), self.cb_odom)

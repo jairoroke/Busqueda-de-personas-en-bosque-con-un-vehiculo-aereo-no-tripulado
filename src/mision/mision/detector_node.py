@@ -107,6 +107,10 @@ def main():
         rclpy.spin(nodo)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception:
+        # Ctrl-C a media inferencia: el publish falla con el contexto ya cerrado
+        if rclpy.ok():
+            raise
     finally:
         nodo.destroy_node(); rclpy.try_shutdown()
 

@@ -62,14 +62,21 @@ entrenamiento es en un simulador en Python (el modelo del capítulo de física, 
 además \textbf{aleatorización de dominio}: en cada episodio la masa, las inercias, $k_f$, el retardo de
 los motores y el viento cambian un poco, para que la red no dependa de valores exactos.
 
+Para el Tarot 650 de la simulación (2.25~kg; la cámara corre el centro de masa 0.67~mm en $x$ y en $y$):
 \begin{lstlisting}[style=bash]
-python3 codigo/nn_imitacion.py --masa 2.114 --com 0.00071 0.00071 --adelanto --salida pesos_nn_x500_busqueda.npz
+cd codigo
+python3 nn_imitacion.py --vehiculo tarot650 --masa 2.25 --com 0.00067 0.00067 --adelanto \
+    --salida pesos_nn_tarot650_busqueda.npz --figura ../imagenes/nn_imitacion_tarot650_busqueda.pdf
 \end{lstlisting}
+\cod{--vehiculo} elige la física del simulador de entrenamiento (masa, inercias, brazos, $k_f$, $k_m$,
+$\omega_{max}$ y retardos de los motores) de la tabla \cod{VEHICULOS} del mismo programa; con
+\cod{--vehiculo x500} se entrena la red del x500 (capítulo~\ref{cap:tarot650}).
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{manual_nn_imitacion_x500_busqueda.png}
-\caption{La red (líneas continuas) y el maestro (discontinuas) ante los mismos escalones.}
+\includegraphics[width=0.85\textwidth]{manual_nn_imitacion_tarot650_busqueda.png}
+\caption{La red del Tarot 650 (líneas continuas) y el maestro (discontinuas) ante los mismos escalones.
+En vuelo estacionario cada motor da $a_i\approx-0.44$: $\omega_i = 680\sqrt{(a_i+1)/2}\approx361$~rad/s.}
 \end{figure}
 
 \section{Aprender por refuerzo: PPO}
@@ -103,20 +110,27 @@ y el plugin \cod{SelectorMotores} deja pasar sus comandos en lugar de los de Ard
 El diseño original tenía dos detalles que impedían que la red volara: el parámetro
 \cod{MC_NN_THRST_COEF} de PX4 trabaja en revoluciones por segundo, no por minuto, y faltaban
 \cod{MC_NN_MIN_RPM} y \cod{THR_MDL_FAC}. Con ellos mal, la misma salida de la red producía otro empuje.
-Los valores correctos están en el \emph{airframe} \cod{px4/4099_gz_x500_busqueda} y una prueba los
+Los valores correctos están en el \emph{airframe} \cod{px4/4100_gz_tarot650_busqueda} (para
+$\omega_{max} = 680$~rad/s, \cod{MC_NN_THRST_COEF} $= 8\pi^2/\omega_{max}^2\times10^5 = 17.0754$,
+\cod{MC_NN_MIN_RPM} 955 y \cod{MC_NN_MAX_RPM} 6494; los del x500 en \cod{px4/4099_gz_x500_busqueda}) y una prueba los
 verifica recorriendo toda la cadena de PX4 (red $\rightarrow$ mezclador $\rightarrow$ ESC).
 \end{leccion}
 
 \section{Tres problemas de la primera versión y su solución}
 
+La primera versión de la red se entrenó y se probó con el x500, el vehículo de las primeras corridas
+(capítulo~\ref{cap:tarot650}); por eso las cifras de esta sección son del x500. Las tres soluciones se
+aplican igual a la red del Tarot 650.
+
 \subsection{Un sesgo de 20 cm}
 
 En la primera prueba en SITL quedaba un error permanente en altura de $-0.27$~m: la red se había
-entrenado con $m = 2.0$~kg y el x500 completo pesa 2.114~kg. Sin integral, $\Delta z = \Delta m\,g/(m\,k_p)$.
+entrenado con $m = 2.0$~kg (la masa del cuerpo del x500) y el x500 completo pesa 2.114~kg. Sin integral, $\Delta z = \Delta m\,g/(m\,k_p)$.
 Con la masa correcta el error en altura desapareció, pero quedó un sesgo horizontal de $\approx$0.2~m: la
 cámara corre 0.7~mm el centro de masa y la red, que nunca vio ese desequilibrio, se quedaba inclinada
 $\approx$1°. La solución fue usar la geometría real en el simulador de entrenamiento (\cod{--com}): el
-maestro compensa con los motores y la red aprende a hacerlo.
+maestro compensa con los motores y la red aprende a hacerlo. Por eso la red del Tarot se entrena con su
+masa completa (\cod{--masa 2.25}) y su centro de masa corrido (\cod{--com 0.00067 0.00067}).
 
 \subsection{La red iba a la mitad de velocidad}
 
@@ -185,5 +199,31 @@ ArduPilot & red nueva & 3/3 & 0.47 m & 0.19 m & \textbf{240 s} \\
 \end{tabular}
 \caption{La misma misión (bosque medio, sol alto, sin viento, 3 personas). Con la red nueva la misión
 dura la mitad, igual o menos que con la cascada; sigue la ruta algo peor en las esquinas, donde la
-consigna adelantada cambia de dirección de golpe.}
+consigna adelantada cambia de dirección de golpe. Corridas con el x500 del 23 de octubre.}
 \end{table}
+
+Con el Tarot 650, su red y ArduPilot volando con el EKF3 (24 de octubre, el mismo escenario):
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Piloto} & \textbf{Controlador} & \textbf{Localizadas} & \textbf{Error medio} & \textbf{RMSE ruta} & \textbf{Duración} \\ \midrule
+PX4 & cascada & 3/3 & 0.54 m & 0.08 m & 248 s \\
+PX4 & red & 3/3 & 0.49 m & 0.27 m & \textbf{213 s} \\
+ArduPilot & cascada & 3/3 & 0.65 m & 0.10 m & 337 s \\
+ArduPilot & red & 3/3 & 0.71 m & 0.29 m & \textbf{269 s} \\
+\bottomrule
+\end{tabular}
+\caption{La misión con el Tarot 650. Con la red dura de 20 a 37 \% menos que con la cascada.}
+\end{table}
+
+\begin{nota}
+Las primeras corridas del Tarot con la red daban 0.39--0.44~m de RMSE. La red no tenía la culpa: la
+misión cambiaba de punto de ruta cuando el \emph{dron} llegaba a 1.5~m de la esquina. Con la cascada el
+dron va atrás de la consigna y ella llega primero; con la red y la consigna adelantada el dron va a la
+par, así que la consigna, todavía a 1~m de la esquina, se iba en diagonal al siguiente punto, recortaba
+la esquina y el dron quedaba corrido medio metro durante todo el tramo siguiente. Ahora el punto cambia
+cuando el dron está cerca \textbf{y} la consigna ya llegó. Moraleja: antes de culpar al controlador,
+compara lo que hizo el dron con lo que se le pidió.
+\end{nota}

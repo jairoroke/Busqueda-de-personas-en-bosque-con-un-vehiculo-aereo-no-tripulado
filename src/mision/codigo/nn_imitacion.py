@@ -15,8 +15,15 @@ reproduce en PyTorch para la fase de refuerzo (diseño original, Sección 5).
 Genera imagenes/nn_imitacion.pdf, guarda los pesos en pesos_nn.npz y escribe
 el cuadro de la Sección 5.3.
 
-Uso: python3 nn_imitacion.py [--masa 2.114 --salida pesos_nn_x500_busqueda.npz]
-     Sin opciones reproduce el Cuadro 11 (m = 2.0 kg, la masa de base_link). El
+Uso: python3 nn_imitacion.py [--vehiculo tarot650|x500] [--masa M --salida pesos.npz]
+     Para el tarot650_busqueda de Gazebo (el vehículo que se usa):
+       python3 nn_imitacion.py --vehiculo tarot650 --masa 2.25 --com 0.00067 0.00067 --adelanto \
+           --salida pesos_nn_tarot650_busqueda.npz
+     (2.12 kg del cuerpo + 4 rotores de 20 g + cámara de 50 g; la cámara corre el centro
+     de masa 0.67 mm en x y en y). Masa, inercias, kf y retardos de los motores del Tarot
+     son supuestos (tabla VEHICULOS de cuadrirotor_sim/scripts/generar_modelo.py).
+
+     Con --vehiculo x500 y sin más opciones reproduce el Cuadro 11 (m = 2.0 kg, la masa de base_link). El
      vehículo completo de Gazebo pesa 2.114 kg (cuerpo + 4 rotores de 16 g +
      cámara de 50 g); como la red imita una cascada PD sin acción integral, la
      diferencia de masa deja un error estacionario en z de unos 0.27 m en SITL.
@@ -47,7 +54,9 @@ import matplotlib.pyplot as plt
 rng = np.random.default_rng(314200394)
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--masa", type=float, default=2.0, help="masa nominal del vehículo [kg]")
+ap.add_argument("--vehiculo", choices=("tarot650", "x500"), default="x500",
+                help="física del vehículo (ver VEHICULOS)")
+ap.add_argument("--masa", type=float, default=None, help="masa nominal del vehículo [kg]")
 ap.add_argument("--salida", default="pesos_nn.npz")
 ap.add_argument("--figura", default="../imagenes/nn_imitacion.pdf")
 ap.add_argument("--com", type=float, nargs=2, default=(0.0, 0.0), metavar=("X", "Y"),
@@ -56,13 +65,25 @@ ap.add_argument("--adelanto", action="store_true",
                 help="entrenar también con referencias en movimiento y consigna adelantada")
 ARGS, _ = ap.parse_known_args()
 
-# ============================================================ vehículo x500
-m, g = ARGS.masa, 9.81
-Ixx = Iyy = 0.02166667; Izz = 0.04
-d, kf, km, wmax = 0.174, 8.54858e-6, 0.016, 1000.0
-T_up, T_dn = 0.0125, 0.025
-fmax = kf*wmax**2                                     # empuje máximo por rotor (8.55 N)
-rot_xy = np.array([[d, -d], [-d, d], [d, d], [-d, -d]])
+# ============================================================ vehículo
+# Rotores en el orden de PX4 (rotor_0 adelante-derecha ccw, rotor_1 atrás-izquierda ccw,
+# rotor_2 adelante-izquierda cw, rotor_3 atrás-derecha cw), marco FLU: (dx, dy) del brazo.
+VEHICULOS = {
+    # x500 de PX4-gazebo-models (Anexo A); m = 2.0 kg es la masa de base_link.
+    "x500": dict(m=2.0, I=(0.02166667, 0.02166667, 0.04), dxy=(0.174, 0.174),
+                 kf=8.54858e-6, km=0.016, wmax=1000.0, T_up=0.0125, T_dn=0.025),
+    # Tarot 650 de cuadrirotor_sim (inercia total con los rotores, generar_modelo.py).
+    "tarot650": dict(m=2.25, I=(0.03412, 0.03609, 0.06596), dxy=(0.2198, 0.212),
+                     kf=4.24e-5, km=0.016, wmax=680.0, T_up=0.03, T_dn=0.05),
+}
+VEH = VEHICULOS[ARGS.vehiculo]
+m, g = (ARGS.masa if ARGS.masa is not None else VEH["m"]), 9.81
+Ixx, Iyy, Izz = VEH["I"]
+kf, km, wmax = VEH["kf"], VEH["km"], VEH["wmax"]
+T_up, T_dn = VEH["T_up"], VEH["T_dn"]
+fmax = kf*wmax**2                                     # empuje máximo por rotor (x500 8.55 N, Tarot 19.6 N)
+dx_, dy_ = VEH["dxy"]
+rot_xy = np.array([[dx_, -dy_], [-dx_, dy_], [dx_, dy_], [-dx_, -dy_]])
 rot_s = np.array([1.0, 1.0, -1.0, -1.0])
 COM = np.array(ARGS.com, float)
 

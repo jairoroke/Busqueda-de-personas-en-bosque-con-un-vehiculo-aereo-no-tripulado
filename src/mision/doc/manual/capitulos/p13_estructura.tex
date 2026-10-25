@@ -7,9 +7,9 @@
 |   |-- codigo/                programas de referencia y la red neuronal
 |   |-- launch/simulacion.launch.py
 |   |-- scripts/               generadores, dataset, entrenamiento, campaña, instalación
-|   |-- models/                x500_busqueda, personas, árboles, suelo
-|   |-- px4/                   airframe 4099_gz_x500_busqueda
-|   |-- config/                GUI de Gazebo, parámetros de ArduPilot
+|   |-- models/                tarot650_busqueda, x500_busqueda, personas, árboles, suelo
+|   |-- px4/                   airframes 4100_gz_tarot650_busqueda y 4099_gz_x500_busqueda
+|   |-- config/                GUI de Gazebo, parámetros de ArduPilot (tarot650.parm, x500.parm)
 |   |-- yolo/                  personas_yolo26s.pt (detector)
 |   `-- test/                  pruebas (pytest)
 |-- mision_gz_plugins/         SelectorMotores (C++), para ArduPilot con la red
@@ -39,9 +39,9 @@
 
 \begin{longtable}{>{\raggedright\arraybackslash}p{4.3cm}p{10.8cm}}
 \toprule
-\cod{sim_modelo.py} & Modelo del x500 con el control base. \\
+\cod{sim_modelo.py} & Modelo del x500 con el control base (sigue usando el x500). \\
 \cod{sim_localizacion.py} & Localización, covarianza y Monte Carlo. \\
-\cod{nn_imitacion.py} & Red 15-64-32-4 por clonación + DAgger (\cod{--masa}, \cod{--com}, \cod{--adelanto}). \\
+\cod{nn_imitacion.py} & Red 15-64-32-4 por clonación + DAgger (\cod{--vehiculo tarot650|x500}, \cod{--masa}, \cod{--com}, \cod{--adelanto}). \\
 \cod{ppo_refinamiento.py} & Refinamiento por PPO (\cod{--mejorado}, \cod{--forma}). \\
 \cod{exportar_tflite.py} & TFLite y \cod{control_net.cpp/.hpp}. \\
 \bottomrule
@@ -53,7 +53,7 @@ Sin las opciones nuevas, estos programas reproducen exactamente las cifras de re
 \begin{longtable}{>{\raggedright\arraybackslash}p{4.3cm}p{10.8cm}}
 \toprule
 \cod{generar_mundo.py} & Bosque por oclusión, iluminación, viento y semilla, con el JSON de las personas verdaderas. \\
-\cod{generar_vehiculo.py} & El x500 con cámara bajo los patines, viento y LiDAR. \\
+\cod{generar_vehiculo.py} & El Tarot 650 (y el x500) con cámara bajo los patines, viento y LiDAR, para PX4 y ArduPilot. \\
 \cod{capturar_dataset.py}, \cod{entrenar_detector.py} & Dataset con cajas visibles y entrenamiento por estrato. \\
 \cod{correr_experimentos.py}, \cod{analisis_wilcoxon.py} & Campaña factorial y pruebas estadísticas. \\
 \cod{instalar_entorno.sh}, \cod{instalar_px4.sh} & Instalación. \\

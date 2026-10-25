@@ -19,8 +19,9 @@ luz cambia y el viento mueve al dron. Para que el dron sirva hay que resolver tr
   \item \textbf{Bosque por factores:} se genera un bosque con tres niveles de cobertura de copas (15,
         45 y 75~\%), dos condiciones de luz (sol alto o sombras largas), con o sin viento, y de una a
         tres personas de pie, sentadas o acostadas en lugares al azar.
-  \item \textbf{Dron:} un x500 de PX4 de 2.114~kg con una cámara de $1280\times960$ que mira hacia
-        abajo, una IMU, GPS y un LiDAR.
+  \item \textbf{Dron:} un Tarot 650 de 2.25~kg (modelo hecho con las mallas de su CAD) con una cámara
+        de $1280\times960$ que mira hacia abajo, una IMU, GPS y un LiDAR. El x500 de PX4, con el que se
+        hicieron las primeras corridas, sigue disponible (\cod{vehiculo:=x500}).
   \item \textbf{Piloto:} PX4~1.17 o ArduCopter~4.7, en SITL (el mismo programa que volaría en el dron
         real).
   \item \textbf{Controlador:} la cascada del piloto automático o una red neuronal 15-64-32-4 que
@@ -41,7 +42,7 @@ luz cambia y el viento mueve al dron. Para que el dron sirva hay que resolver tr
   nodo/.default=white,
   flecha/.style={-{Stealth[length=2.5mm]},thick},
   et/.style={font=\scriptsize\ttfamily,fill=white,inner sep=1pt}]
-  \node[nodo=orange!15,minimum width=4.2cm,minimum height=2cm] (gz) at (0,0) {\textbf{Gazebo Harmonic}\\ bosque, x500, cámara,\\ LiDAR, viento};
+  \node[nodo=orange!15,minimum width=4.2cm,minimum height=2cm] (gz) at (0,0) {\textbf{Gazebo Harmonic}\\ bosque, Tarot 650, cámara,\\ LiDAR, viento};
   \node[nodo=red!10] (px4) at (6,0) {\textbf{PX4 SITL}\\ (o ArduCopter)\\ cascada o red neuronal};
   \node[nodo=black!5] (dds) at (6,-2.6) {agente\\ uXRCE-DDS};
   \node[nodo=black!5] (puente) at (0,-2.6) {\cod{ros_gz_bridge}};

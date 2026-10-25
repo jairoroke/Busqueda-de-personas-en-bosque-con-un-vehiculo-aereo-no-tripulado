@@ -22,7 +22,8 @@ source ~/ros2_ws/install/setup.bash
 ros2 launch mision simulacion.launch.py
 \end{lstlisting}
 En unos 30~segundos aparecen Gazebo con el bosque, la terminal y la consola de MAVProxy, y el mapa.
-La terminal de ROS va diciendo lo que pasa:
+El Tarot 650 despega del origen. La terminal de ROS va diciendo lo que pasa (esta salida es de una
+corrida del 23 de octubre, con el x500; con el Tarot los mensajes son los mismos):
 \begin{lstlisting}
 [mision]: misión fija con controlador cascada: 8 puntos de ruta a 30.0 m
 [mision]: despegue -> barrido
@@ -63,6 +64,7 @@ ros2 launch mision simulacion.launch.py estrategia:=reobs             # con re-o
 ros2 launch mision simulacion.launch.py oclusion:=alta semilla:=4     # bosque denso
 ros2 launch mision simulacion.launch.py controlador:=red              # vuela la red neuronal
 ros2 launch mision simulacion.launch.py piloto:=ardupilot             # con ArduPilot
+ros2 launch mision simulacion.launch.py vehiculo:=x500                # con el x500 de PX4
 ros2 launch mision simulacion.launch.py gui:=false salida:=$HOME/r.json   # sin ventanas
 \end{lstlisting}
 
@@ -88,5 +90,7 @@ uses \cod{make px4_sitl gz_...} para estas misiones. \\
 Ninguna persona encontrada & ¿El detector cargó los pesos? Busca \cod{[detector]} en la terminal y
 mira \cod{/detecciones}. \\
 Quedan ventanas abiertas & \cod{pkill -f mavproxy}; el \emph{launch} normalmente las cierra. \\
+Con \cod{vehiculo:=x500} y \cod{controlador:=red} PX4 vuela mal & PX4 lleva compilada la red del Tarot;
+reinstala la del x500 con \cod{instalar_px4.sh} (capítulo~\ref{cap:tarot650}). \\
 \bottomrule
 \end{longtable}

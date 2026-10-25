@@ -2,7 +2,7 @@
 
 \begin{enpocas}
 Las partes de un cuadrirrotor, por qué vuela, cómo sube, avanza y gira con solo cambiar la velocidad
-de sus cuatro motores, y cómo es el x500 que usamos.
+de sus cuatro motores, y cómo es el Tarot 650 que usamos.
 \end{enpocas}
 
 \section{Drones, multirrotores y cuadrirrotores}
@@ -28,20 +28,22 @@ dron.
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{c_partes.png}
-\caption{Partes de un cuadrirrotor como el x500.}
+\caption{Partes de un cuadrirrotor.}
 \label{fig:partes}
 \end{figure}
 
 \begin{description}
-  \item[Marco (frame).] La estructura: una placa central y cuatro brazos. En el x500 son de fibra de
-        carbono, ligera y rígida; mide 500~mm entre motores opuestos.
+  \item[Marco (frame).] La estructura: una placa central y cuatro brazos. En el Tarot 650 son de fibra
+        de carbono, ligera y rígida; en el modelo de la simulación hay unos 61~cm entre motores opuestos
+        (el ``650'' del nombre es la medida comercial del marco, en milímetros).
   \item[Motores sin escobillas (brushless).] Motores eléctricos trifásicos muy eficientes. Su constante
         KV dice cuántas revoluciones por minuto da por cada volt.
   \item[ESC (controlador electrónico de velocidad).] Uno por motor. Recibe una orden (``gira a tanto'')
         y genera las corrientes trifásicas para lograrlo.
   \item[Hélices.] Convierten el giro en empuje. Se describen con dos números: diámetro y paso, en
-        pulgadas. Las del x500 son de $13\times4.5$: 13'' de diámetro (33~cm) y 4.5'' de paso (lo que
-        avanzarían en una vuelta si se ``atornillaran'' en el aire).
+        pulgadas. Una hélice de $13\times4.5$ tiene 13'' de diámetro (33~cm) y 4.5'' de paso (lo que
+        avanzaría en una vuelta si se ``atornillara'' en el aire). Las del Tarot de la simulación son de
+        15'' de diámetro (38~cm).
   \item[Batería LiPo.] Polímero de litio: mucha energía para su peso. Se describen por el número de
         celdas en serie (4S, 6S: 3.7~V cada una) y su capacidad en mAh.
   \item[Controlador de vuelo.] La computadora a bordo: lee los sensores y decide la velocidad de cada
@@ -129,37 +131,46 @@ la inclinación hay que pedir velocidades a los motores.
 
 Si un brazo apunta al frente, la configuración es ``+''; si el frente queda entre dos brazos, es
 ``X''. La ``X'' es la más común: la cámara frontal no ve hélices y los cuatro motores trabajan al
-inclinarse hacia adelante. El x500 es ``X''.
+inclinarse hacia adelante. El Tarot 650 es ``X''.
 
-\section{El x500}
+\section{El Tarot 650}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{x500_render.png}
-\caption{El x500 de la simulación, dibujado a partir de las mallas de su modelo de PX4.}
+\includegraphics[width=\textwidth]{tarot650_render.png}
+\caption{El Tarot 650 de la simulación, dibujado a partir de las mallas de su modelo de Gazebo
+(\cod{herramientas/tarot650_figuras.py}).}
 \end{figure}
 
-El x500 (Holybro) es el marco de referencia de PX4: barato, robusto y con modelos de simulación
-oficiales. El nuestro:
+El Tarot Ironman 650 es un marco de cuadrirrotor de fibra de carbono para cargar cámaras y otros
+sensores. El modelo de la simulación sale de las mallas
+de su CAD. El nuestro:
 \begin{itemize}
-  \item motores a $(\pm0.174, \pm0.174)$~m del centro, en ``X'';
-  \item hélices de 13'';
-  \item 2.114~kg en total (cuerpo de 2.0~kg, cuatro rotores de 16~g y una cámara de 50~g);
-  \item cada motor da hasta 8.55~N; en total $\approx$1.65 veces su peso;
+  \item motores a $(\pm0.2198, \pm0.212)$~m del centro, en ``X'';
+  \item hélices de 15'';
+  \item 2.25~kg en total (cuerpo de 2.12~kg, cuatro rotores de 20~g y una cámara de 50~g);
+  \item cada motor da hasta 19.6~N; en total $\approx$3.6 veces su peso;
   \item una cámara de $1280\times960$ píxeles con campo horizontal de 1.74~rad (100°) que mira hacia
-        abajo, 25~cm debajo del centro (bajo los patines).
+        abajo, 24~cm debajo del centro (bajo los patines).
 \end{itemize}
 
+\begin{aviso}
+La masa, las inercias, $k_f$ y los retardos de los motores del modelo son \emph{supuestos}, no medidos.
+Antes de confiar en la simulación para un dron real hay que reemplazarlos por los de ese dron
+(capítulo~\ref{cap:tarot650}).
+\end{aviso}
+
 \begin{tecnico}
-En vuelo estacionario cada motor sostiene un cuarto del peso: $2.114\times9.81/4 = 5.18$~N. Con
-$f = k_f\omega^2$ y $k_f = 8.54858\times10^{-6}$, la velocidad necesaria es
-$\omega = \sqrt{5.18/k_f} = 779$~rad/s, unas 7400 revoluciones por minuto.
+En vuelo estacionario cada motor sostiene un cuarto del peso: $2.25\times9.81/4 = 5.52$~N. Con
+$f = k_f\omega^2$ y $k_f = 4.24\times10^{-5}$, la velocidad necesaria es
+$\omega = \sqrt{5.52/k_f} = 361$~rad/s, unas 3450 revoluciones por minuto, un poco más de la mitad
+de su máximo de 680~rad/s.
 \end{tecnico}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.7\textwidth]{x500_motor.png}
-\caption{Empuje de un motor del x500 contra su velocidad de giro.}
+\includegraphics[width=0.7\textwidth]{tarot650_motor.png}
+\caption{Empuje de un motor del Tarot 650 contra su velocidad de giro.}
 \end{figure}
 
 \section{Para qué sirve un dron en una búsqueda}

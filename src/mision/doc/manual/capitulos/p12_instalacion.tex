@@ -65,13 +65,24 @@ python3 -m venv ~/venv-mision
 
 \begin{lstlisting}[style=bash]
 cd ~/ros2_ws/src/mision
-python3 scripts/generar_vehiculo.py                 # x500_busqueda y su variante para ArduPilot
-cd codigo && ~/venv-mision/bin/python exportar_tflite.py --pesos pesos_nn_x500_busqueda.npz --salida control_net_x500_busqueda
-cd .. && bash scripts/instalar_px4.sh $PWD/codigo/control_net_x500_busqueda
+python3 scripts/generar_vehiculo.py      # tarot650_busqueda, x500_busqueda y sus variantes para ArduPilot
+cd codigo
+python3 nn_imitacion.py --vehiculo tarot650 --masa 2.25 --com 0.00067 0.00067 --adelanto \
+    --salida pesos_nn_tarot650_busqueda.npz --figura ../imagenes/nn_imitacion_tarot650_busqueda.pdf
+~/venv-mision/bin/python exportar_tflite.py --pesos pesos_nn_tarot650_busqueda.npz --salida control_net_tarot650_busqueda
+bash ../scripts/instalar_px4.sh ~/ros2_ws/src/mision/codigo/control_net_tarot650_busqueda
 \end{lstlisting}
-\cod{instalar_px4.sh} copia a PX4 el vehículo, el \emph{airframe} \cod{4099_gz_x500_busqueda} y la red
-(guardando una vez la original como \cod{control_net.*.px4}), agrega \cod{/fmu/out/neural_control} a los
-tópicos que exporta PX4 y compila \cod{make px4_sitl_neural}.
+\cod{instalar_px4.sh} copia a \cod{~/PX4-Autopilot} los vehículos \cod{tarot650_busqueda} y
+\cod{x500_busqueda}, los \emph{airframes} \cod{4100_gz_tarot650_busqueda} y \cod{4099_gz_x500_busqueda}
+(carpeta \cod{px4/}) y la red (guardando una vez la original como \cod{control_net.*.px4}), agrega
+\cod{/fmu/out/neural_control} a los tópicos que exporta PX4 y compila \cod{make px4_sitl_neural}.
+Repite estos pasos cada vez que cambies la red o el vehículo.
+
+\begin{aviso}
+PX4 lleva \textbf{una sola red compilada}: ahora es la del Tarot. Para volar el x500 con
+\cod{controlador:=red} en PX4 hay que reinstalar \cod{control_net_x500_busqueda}. Con ArduPilot no
+hace falta: \cod{controlador_red} carga los pesos del vehículo que se lanza.
+\end{aviso}
 
 \section{6. ArduPilot (opcional)}
 

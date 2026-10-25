@@ -6,10 +6,10 @@
 # simulación y las poses verdaderas de todos los modelos del mundo.
 #
 # Diferencias con el Código 8.2 del diseño original: el sensor de la cámara se llama
-# "imager" (no "camera"), el vehículo es x500_busqueda_0 y el panel de Gazebo
+# "imager" (no "camera"), el vehículo es tarot650_busqueda_0 (o x500_busqueda_0) y el panel de Gazebo
 # recibe la imagen anotada del detector (/camera_yolo).
 MUNDO=${1:?nombre del mundo, p. ej. bosque_media_alta_no_1}
-MODELO=${2:-x500_busqueda_0}
+MODELO=${2:-tarot650_busqueda_0}
 CAM=/world/${MUNDO}/model/${MODELO}/link/camera_link/sensor/imager
 exec ros2 run ros_gz_bridge parameter_bridge \
     "${CAM}/image@sensor_msgs/msg/Image[gz.msgs.Image" \

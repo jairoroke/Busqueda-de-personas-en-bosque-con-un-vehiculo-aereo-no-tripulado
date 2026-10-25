@@ -7,7 +7,7 @@ modo GUIDED por MAVLink (pymavlink), en lugar de PX4 en modo offboard.
 
   - Consignas: SET_POSITION_TARGET_LOCAL_NED (sólo posición y guiñada).
   - Despegue: GUIDED, armar y MAV_CMD_NAV_TAKEOFF a la altura de trabajo.
-  - controlador:=red: publica "red" en el tópico de Gazebo /x500/controlador; el
+  - controlador:=red: publica "red" en el tópico de Gazebo /dron/controlador; el
     sistema SelectorMotores deja pasar a los motores los comandos de
     controlador_red en lugar de los de ArduPilot. ArduPilot sigue estimando el
     estado y recibe las mismas consignas (así sus errores, y sus integradores, se
@@ -19,7 +19,7 @@ modo GUIDED por MAVLink (pymavlink), en lugar de PX4 en modo offboard.
     que en SITL con lockstep avanza con el reloj de Gazebo. ArduPilot no envía las
     varianzas del EKF en esos mensajes; se usan valores típicos fijos (parámetros
     sigma_pos y sigma_ori).
-  - Publica la consigna en /x500/consigna (geometry_msgs/PointStamped, ENU) para
+  - Publica la consigna en /dron/consigna (geometry_msgs/PointStamped, ENU) para
     controlador_red.
 
 Ejecución (con el Python de ~/venv-ardupilot, que tiene pymavlink y ve ROS 2):
@@ -54,12 +54,12 @@ class MisionArduPilot(Mision):
         self.tasa = g("tasa_estado_hz")
         self.mav = mavutil.mavlink_connection(g("conexion"), source_system=250)
         self.pub_odom = self.create_publisher(VehicleOdometry, "/fmu/out/vehicle_odometry", QOS_PX4)
-        self.pub_consigna = self.create_publisher(PointStamped, "/x500/consigna", 10)
+        self.pub_consigna = self.create_publisher(PointStamped, "/dron/consigna", 10)
         from gz.msgs10.stringmsg_pb2 import StringMsg
         from gz.transport13 import Node as GzNode
         self.StringMsg = StringMsg
         self.gz = GzNode()
-        self.pub_modo = self.gz.advertise("/x500/controlador", StringMsg)
+        self.pub_modo = self.gz.advertise("/dron/controlador", StringMsg)
         self.estado_ap = "conectando"; self.t_ap = time.time()
         self.prearmado = False; self.despegando = False
         self.ned = None; self.vel_ned = np.zeros(3)

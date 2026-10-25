@@ -14,13 +14,13 @@ están corregidos en el paquete:
   \item El sensor de la cámara se llama \cod{imager}, no \cod{camera}.
   \item \cod{VehicleStatus} es versionado: el tópico es \cod{/fmu/out/vehicle_status_v1}.
   \item En \cod{x500_mono_cam_down} la cámara está 10~cm \emph{arriba} del centro y ve el propio
-        vehículo; aquí va 25~cm abajo.
+        vehículo; aquí va 25~cm abajo en el x500 y 24~cm abajo en el Tarot 650.
   \item La configuración de Gazebo de PX4 carga \cod{GstCameraSystem}, que acumula cuadros si el
         codificador se atora: 110~MB/s y el sistema se queda sin memoria en minutos. Aquí Gazebo
         arranca sin él.
   \item \cod{MC_NN_THRST_COEF} trabaja con revoluciones por segundo, no rpm, y faltaban
-        \cod{MC_NN_MIN_RPM} y \cod{THR_MDL_FAC}; los valores correctos están en el \emph{airframe}
-        4099 y los verifican las pruebas.
+        \cod{MC_NN_MIN_RPM} y \cod{THR_MDL_FAC}; los valores correctos están en los \emph{airframes}
+        4100 (Tarot 650) y 4099 (x500) y los verifican las pruebas.
   \item La masa del x500 completo es 2.114~kg, no 2.0.
   \item \cod{exportar_tflite.py} usaba \cod{--salida} como nombre del símbolo en C; el módulo exige
         \cod{control_net_tflite}.
@@ -34,7 +34,8 @@ están corregidos en el paquete:
   \item Los programas de modelo, localización, imitación, PPO y exportación reproducen las tablas y
         salidas de referencia (el TFLite difiere de numpy en $1.1\times10^{-6}$).
   \item El detector ajustado: AP50 0.954 en validación; el YOLO de COCO no encontraba a nadie.
-  \item La red mejorada: sesgo estacionario de 25.9 a 2.1~cm y misión en 211~s en vez de 427~s.
+  \item La red mejorada (con el x500): sesgo estacionario de 25.9 a 2.1~cm y misión en 211~s en vez de
+        427~s.
   \item Las coordenadas GPS de los avisos coinciden con el GPS de PX4, el \emph{home} de ArduPilot y el
         mapa de MAVProxy (prueba \cod{test_origen_gps_igual_al_del_mundo}).
   \item \cod{colcon test}: las 8 pruebas del paquete pasan.
@@ -43,6 +44,13 @@ están corregidos en el paquete:
 \section{Pendientes}
 
 \begin{itemize}
+  \item \textbf{Los parámetros del Tarot 650.} Masa, inercias, $k_f$ y retardos de los motores son
+        supuestos. Hay que medirlos en el dron real, regenerar el vehículo, reentrenar la red e
+        instalarla (capítulo~\ref{cap:tarot650}).
+  \item \textbf{Las esquinas con la red.} En los tramos rectos la red sigue la ruta igual que la
+        cascada, pero en las vueltas de 90° la consigna adelantada cambia de dirección de golpe y el
+        dron se pasa (RMSE de 0.27--0.29~m contra 0.08--0.10~m de la cascada). Suavizar la consigna en las
+        esquinas es el siguiente paso.
   \item \textbf{Falsas alarmas persistentes.} Grupos de robles que el detector confunde en muchos
         cuadros. Reentrenar con esos ``negativos difíciles'' es el siguiente paso.
   \item \textbf{PPO.} Ya no diverge, pero no mejora a la imitación; falta una recompensa que premie lo

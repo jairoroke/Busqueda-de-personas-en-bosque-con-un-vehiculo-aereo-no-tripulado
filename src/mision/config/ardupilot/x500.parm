@@ -21,3 +21,7 @@ WPNAV_SPEED     300
 WPNAV_SPEED_UP  300
 WPNAV_SPEED_DN  150
 LAND_SPEED      70
+# Volar con el EKF3, no con el estado verdadero del simulador (10). Requiere
+# no_time_sync=0 en el modelo (scripts/generar_vehiculo.py).
+AHRS_EKF_TYPE   3
+EK3_ENABLE      1

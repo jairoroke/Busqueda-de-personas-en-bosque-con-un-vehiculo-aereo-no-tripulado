@@ -15,7 +15,8 @@ NED) y el modo \emph{offboard}; tras el primer segundo pide a PX4 cambiar a offb
 \begin{description}
   \item[Despegue:] sube a la vertical del origen hasta la altura de trabajo (30~m).
   \item[Barrido:] recorre las franjas. La consigna avanza a 3~m/s sin alejarse más de 3~m del
-        vehículo (\cod{adelanto_max}).
+        vehículo (\cod{adelanto_max}). Pasa al siguiente punto de la ruta cuando el vehículo está a
+        menos de 1.5~m del punto y la consigna ya llegó a él.
   \item[Re-observación] (\cod{estrategia:=reobs}): al terminar cada franja, si hay candidatas dudosas
         (confianza entre $s_1 = 0.3$ y $s_2 = 0.6$), va a la más cercana: baja a 20~m, con un
         desplazamiento lateral de 6~m para verla desde otro ángulo, espera 3~s y regresa. Cada candidata
@@ -35,7 +36,7 @@ registro guarda la consigna sin adelanto.
 \begin{leccion}
 Se probó suavizar el adelanto con un filtro de 1~s para que en las esquinas la consigna no saltara
 4.8~m de lado. Empeoró: el adelanto filtrado seguía apuntando en la dirección vieja y el dron se pasaba
-de la esquina (RMSE de la ruta de 0.23 a 0.37~m). Sin filtro es exactamente una PD con prealimentación;
+de la esquina (RMSE de la ruta de 0.23 a 0.37~m, con el x500). Sin filtro es exactamente una PD con prealimentación;
 el filtro quedó como opción (\cod{tau_adelanto}) desactivada.
 \end{leccion}
 

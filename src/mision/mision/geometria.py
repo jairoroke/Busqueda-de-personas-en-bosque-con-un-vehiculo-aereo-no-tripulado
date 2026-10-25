@@ -10,10 +10,11 @@ import numpy as np
 # Orientación de la cámara respecto al cuerpo (ec. 4.3): columnas = ejes de la
 # cámara en el cuerpo (derecha de la imagen = -A_y, abajo = -A_x, eje óptico = -A_z).
 R_BC = np.array([[0, -1, 0], [-1, 0, 0], [0, 0, -1.0]])
-# En x500_busqueda la cámara está 25 cm debajo del origen de base_link, bajo los
-# patines (scripts/generar_vehiculo.py, Z_CAMARA). En el x500_mono_cam_down de PX4
-# está 10 cm ARRIBA (y ve el propio vehículo); el diseño original supone 10 cm abajo.
-T_BC = np.array([0.0, 0.0, -0.25])
+# En tarot650_busqueda la cámara está 24 cm debajo del origen de base_link, bajo los
+# patines (scripts/generar_vehiculo.py, z_camara; en x500_busqueda, 25 cm). En el
+# x500_mono_cam_down de PX4 está 10 cm ARRIBA (y ve el propio vehículo); el diseño
+# original supone 10 cm abajo. El localizador la recibe en su parámetro z_camara.
+T_BC = np.array([0.0, 0.0, -0.24])
 
 
 def R_euler(psi, th, ph):

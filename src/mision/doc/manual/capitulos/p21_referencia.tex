@@ -10,6 +10,7 @@ para consultar.
 \begin{longtable}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{3.3cm}p{7.5cm}}
 \toprule
 \textbf{Argumento} & \textbf{Por omisión} & \textbf{Qué hace} \\ \midrule \endhead
+\cod{vehiculo} & tarot650 & tarot650 o x500 (el de las primeras corridas) \\
 \cod{oclusion} & media & baja, media, alta: cobertura de copas 15, 45, 75~\% \\
 \cod{iluminacion} & alta & alta (mediodía) o baja (sombras largas) \\
 \cod{viento} & no & si: 4~m/s medios con ráfagas \\
@@ -19,7 +20,7 @@ para consultar.
 \cod{controlador} & cascada & cascada (del piloto) o red \\
 \cod{altura}, \cod{velocidad}, \cod{lado} & 30, 3, 120 & m, m/s, m \\
 \cod{pesos}, \cod{umbral} & YOLO26s, 0.25 & modelo del detector y confianza mínima \\
-\cod{pesos_red} & (la instalada) & pesos de la red para \cod{controlador_red} (ArduPilot) \\
+\cod{pesos_red} & \cod{pesos_nn_tarot650_busqueda.npz} & pesos de la red para \cod{controlador_red} (ArduPilot); por omisión, los del vehículo \\
 \cod{latencia_extra_ms}, \cod{saltar_cuadros} & 0, 0 & degradación artificial del detector (P3) \\
 \cod{gui}, \cod{mavproxy} & true, true & ventanas de Gazebo y estación de tierra \\
 \cod{salida} & \cod{~/resultados/corrida.json} & registro del vuelo \\
@@ -59,8 +60,8 @@ para consultar.
 \cod{/personas/estimaciones} & Detection3DArray & localizador (cada detección) \\
 \cod{/personas/candidatas} & Detection3DArray & localizador (fusionadas) \\
 \cod{/personas/gps}, \cod{/personas/alerta} & NavSatFix, String & misión \\
-\cod{/x500/consigna} & PointStamped & misión \\
-\cod{/x500/lidar/points} & PointCloud2 & Gazebo (puente) \\
+\cod{/dron/consigna} & PointStamped & misión \\
+\cod{/dron/lidar/points} & PointCloud2 & Gazebo (puente) \\
 \cod{/fmu/out/vehicle_odometry} & VehicleOdometry & PX4 (o \cod{mision_ardupilot}) \\
 \cod{/fmu/in/trajectory_setpoint} & TrajectorySetpoint & misión \\
 \bottomrule
@@ -72,11 +73,11 @@ para consultar.
 \toprule
 \textbf{Programa} & \textbf{Para qué} \\ \midrule \endhead
 \cod{scripts/generar_mundo.py} & bosque por factores \\
-\cod{scripts/generar_vehiculo.py} & modelos x500\_busqueda (PX4 y ArduPilot) \\
+\cod{scripts/generar_vehiculo.py} & modelos \cod{tarot650_busqueda} y \cod{x500_busqueda} (PX4 y ArduPilot) \\
 \cod{scripts/importar_personas.py} & modelos de personas desde Gazebo Fuel \\
 \cod{scripts/capturar_dataset.py}, \cod{preparar_datos.py}, \cod{entrenar_detector.py} & datos y entrenamiento del detector \\
 \cod{scripts/correr_experimentos.py}, \cod{analisis_wilcoxon.py} & campaña y estadística \\
-\cod{scripts/instalar_px4.sh} & copia la red y el \emph{airframe} a PX4 \\
+\cod{scripts/instalar_px4.sh} & copia los vehículos, los \emph{airframes} y la red a PX4 \\
 \cod{codigo/nn_imitacion.py}, \cod{ppo_refinamiento.py}, \cod{exportar_tflite.py} & entrenamiento y exportación de la red \\
 \cod{mision/prueba_neural.py} & escalones con la red en SITL \\
 \bottomrule

@@ -1,4 +1,4 @@
-// Sistema de Gazebo que decide quién mueve los motores del x500 cuando lo pilota
+// Sistema de Gazebo que decide quién mueve los motores del dron (Tarot 650 o x500) cuando lo pilota
 // ArduPilot SITL: ArduPilot (un gz.msgs.Double por motor, como los publica
 // ArduPilotPlugin con <type>COMMAND</type>) o la red neuronal del proyecto
 // (un gz.msgs.Actuators con las velocidades de rotor, de controlador_red).
@@ -11,11 +11,11 @@
 //
 // Uso en el SDF del modelo:
 //   <plugin filename="SelectorMotores" name="mision::SelectorMotores">
-//     <entrada>/x500/ap/motor_0</entrada>   (una por motor, en orden)
+//     <entrada>/dron/ap/motor_0</entrada>   (una por motor, en orden)
 //     ...
-//     <red>/x500/red/motor_speed</red>
-//     <modo>/x500/controlador</modo>
-//     <salida>/x500_busqueda_0/command/motor_speed</salida>   (donde escucha MulticopterMotorModel)
+//     <red>/dron/red/motor_speed</red>
+//     <modo>/dron/controlador</modo>
+//     <salida>/tarot650_busqueda_0/command/motor_speed</salida>   (donde escucha MulticopterMotorModel)
 //     <tiempo_max>0.05</tiempo_max>
 //   </plugin>
 #include <chrono>
@@ -63,14 +63,14 @@ public:
         this->red[i] = _m.velocity(i);
       this->recibidaRed = true;
     };
-    this->nodo.Subscribe(_sdf->Get<std::string>("red", "/x500/red/motor_speed").first, cbRed);
+    this->nodo.Subscribe(_sdf->Get<std::string>("red", "/dron/red/motor_speed").first, cbRed);
     std::function<void(const gz::msgs::StringMsg &)> cbModo = [this](const gz::msgs::StringMsg &_m)
     {
       std::lock_guard<std::mutex> lock(this->mutex);
       this->modoRed = (_m.data() == "red");
       gzmsg << "SelectorMotores: motores controlados por " << (this->modoRed ? "la red" : "ArduPilot") << "\n";
     };
-    this->nodo.Subscribe(_sdf->Get<std::string>("modo", "/x500/controlador").first, cbModo);
+    this->nodo.Subscribe(_sdf->Get<std::string>("modo", "/dron/controlador").first, cbModo);
     this->tiempoMax = _sdf->Get<double>("tiempo_max", 0.05).first;
     const auto salida = _sdf->Get<std::string>("salida", "command/motor_speed").first;
     this->pub = this->nodo.Advertise<gz::msgs::Actuators>(salida);

@@ -25,7 +25,8 @@ Diferencias con el Código 8.5 del diseño original:
   - controlador:=red cambia al modo Neural Control (mc_nn_control) al llegar a la
     altura de trabajo y regresa a offboard antes de aterrizar (sustituye al
     temporizador fijo de modo_neural.py, que podía activar la red a media subida).
-  - La consigna avanza a lo más `adelanto_max` metros por delante del vehículo.
+  - La consigna avanza a lo más `adelanto_max` metros por delante del vehículo, y el punto
+    de ruta cambia cuando el vehículo está a menos de 1.5 m y la consigna ya llegó a él.
   - Con controlador:=red la consigna que se manda va adelantada (`prealimentacion`):
     p_ref + c v_ref, con c = kd/kp de la cascada que imita la red (1.6 s en x, y;
     1.25 s en z). Una cascada PD con esa consigna equivale a una con prealimentación
@@ -50,7 +51,7 @@ Diferencias con el Código 8.5 del diseño original:
     escribe ahí (JSON) la ruta y las personas avisadas, que dibuja el módulo de
     MAVProxy mision.mavproxy_trayectoria. El origen del mundo está en mision/geo.py.
   - Evasión de obstáculos (mision/evasion.py, `evasion`): los puntos del LiDAR
-    (/x500/lidar/points) pasan al marco del mundo con la pose del piloto y, si el
+    (/dron/lidar/points) pasan al marco del mundo con la pose del piloto y, si el
     tramo recto hacia el siguiente punto pasa a menos de `radio_evasion` de un
     obstáculo a la altura del vehículo, la consigna toma el rumbo libre más cercano
     (histograma polar) o sube. A 30 m sobre el bosque casi nunca actúa.
@@ -123,7 +124,7 @@ class Mision(Node):
         self.evasion = Evasion(SueloPlano(), radio=g("radio_evasion"), alcance=g("alcance_evasion"))
         self.desviado = False
         if g("evasion"):
-            self.create_subscription(PointCloud2, "/x500/lidar/points", self.cb_lidar, 5)
+            self.create_subscription(PointCloud2, "/dron/lidar/points", self.cb_lidar, 5)
         latched = QoSProfile(depth=50, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.pub_gps = self.create_publisher(NavSatFix, "/personas/gps", latched)
         self.pub_alerta = self.create_publisher(String, "/personas/alerta", latched)
@@ -367,7 +368,10 @@ class Mision(Node):
             self.aterrizar(); return
         objetivo = self.waypoints[self.indice]
         self.avanzar_hacia(objetivo)
-        if np.linalg.norm(self.pos - objetivo) < 1.5:
+        # cambiar de punto cuando el vehículo está cerca y la consigna ya llegó: si la consigna
+        # no ha llegado (con la red y la prealimentación el vehículo va a la par de ella), se iría
+        # en diagonal al siguiente punto, recortaría la esquina y correría todo el tramo siguiente
+        if np.linalg.norm(self.pos - objetivo) < 1.5 and np.linalg.norm(self.consigna - objetivo) < 0.1:
             self.indice += 1
             # al terminar una franja, atender la candidata dudosa más cercana (Algoritmo 1)
             if self.estrategia == "reobs" and self.indice % 2 == 1 and self.dudosas:
