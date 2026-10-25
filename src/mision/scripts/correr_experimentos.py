@@ -12,6 +12,7 @@ Uso:
   python3 correr_experimentos.py --dry-run                        (sólo imprime el plan)
   python3 correr_experimentos.py --semillas 2 --solo oclusion=media,controlador=cascada
   python3 correr_experimentos.py --piloto ardupilot --semillas 30
+  python3 correr_experimentos.py --vehiculo x500 --salida ~/resultados_x500     (el x500 de las primeras corridas)
 
 Diferencias con el Código 8.6 del diseño original: cada corrida es un solo `ros2 launch`
 (el launch genera el mundo y ordena el arranque), corre en su propia partición de
@@ -47,7 +48,7 @@ def correr(c, salida, timeout=900, dominio=42, extra=()):
         return "ya existe"
     env = dict(os.environ, GZ_PARTITION=f"experimentos_{os.getpid()}", ROS_DOMAIN_ID=str(dominio))
     cmd = ["ros2", "launch", "mision", "simulacion.launch.py", "gui:=false", f"salida:={archivo}"] + \
-          [f"{k}:={c[k]}" for k in ("piloto", "oclusion", "iluminacion", "viento", "estrategia", "controlador", "semilla")] + list(extra)
+          [f"{k}:={c[k]}" for k in ("vehiculo", "piloto", "oclusion", "iluminacion", "viento", "estrategia", "controlador", "semilla")] + list(extra)
     t0 = time.time()
     with open(os.path.join(salida, "logs", nombre_de(c) + ".log"), "w") as log:
         p = subprocess.Popen(cmd, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
@@ -81,10 +82,11 @@ if __name__ == "__main__":
     ap.add_argument("--timeout", type=int, default=900)
     ap.add_argument("--dominio", type=int, default=42, help="ROS_DOMAIN_ID de las corridas")
     ap.add_argument("--piloto", choices=["px4", "ardupilot"], default="px4")
+    ap.add_argument("--vehiculo", choices=["tarot650", "x500"], default="tarot650")
     ap.add_argument("--dry-run", action="store_true")
     a, extra = ap.parse_known_args()                          # lo demás (k:=v) pasa al launch
     filtro = dict(x.split("=") for x in a.solo.split(",") if x)
-    corridas = [dict(c, piloto=a.piloto) for c in plan(a.semillas)]
+    corridas = [dict(c, piloto=a.piloto, vehiculo=a.vehiculo) for c in plan(a.semillas)]
     corridas = [c for c in corridas if all(str(c[k]) == v for k, v in filtro.items())]
     print(f"{len(corridas)} corridas en el plan")
     if a.dry_run:

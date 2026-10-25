@@ -63,6 +63,8 @@ ap.add_argument("--com", type=float, nargs=2, default=(0.0, 0.0), metavar=("X", 
                 help="centro de masa corrido respecto al centro de los rotores [m]")
 ap.add_argument("--adelanto", action="store_true",
                 help="entrenar también con referencias en movimiento y consigna adelantada")
+ap.add_argument("--viento", action="store_true",
+                help="entrenar con el arrastre y el viento de Gazebo (WindEffects): F = k m_cuerpo (w - v), k = 0.15, w hasta 6 m/s")
 ARGS, _ = ap.parse_known_args()
 
 # ============================================================ vehículo
@@ -70,13 +72,15 @@ ARGS, _ = ap.parse_known_args()
 # rotor_2 adelante-izquierda cw, rotor_3 atrás-derecha cw), marco FLU: (dx, dy) del brazo.
 VEHICULOS = {
     # x500 de PX4-gazebo-models (Anexo A); m = 2.0 kg es la masa de base_link.
-    "x500": dict(m=2.0, I=(0.02166667, 0.02166667, 0.04), dxy=(0.174, 0.174),
+    # m_viento: masa de los eslabones con <enable_wind> (WindEffects empuja con k m (w - v)).
+    "x500": dict(m=2.0, m_viento=2.0, I=(0.02166667, 0.02166667, 0.04), dxy=(0.174, 0.174),
                  kf=8.54858e-6, km=0.016, wmax=1000.0, T_up=0.0125, T_dn=0.025),
     # Tarot 650 de cuadrirotor_sim (inercia total con los rotores, generar_modelo.py).
-    "tarot650": dict(m=2.25, I=(0.03412, 0.03609, 0.06596), dxy=(0.2198, 0.212),
+    "tarot650": dict(m=2.25, m_viento=2.12, I=(0.03412, 0.03609, 0.06596), dxy=(0.2198, 0.212),
                      kf=4.24e-5, km=0.016, wmax=680.0, T_up=0.03, T_dn=0.05),
 }
 VEH = VEHICULOS[ARGS.vehiculo]
+K_VIENTO = 0.15                                       # = FACTOR_VIENTO de scripts/generar_mundo.py
 m, g = (ARGS.masa if ARGS.masa is not None else VEH["m"]), 9.81
 Ixx, Iyy, Izz = VEH["I"]
 kf, km, wmax = VEH["kf"], VEH["km"], VEH["wmax"]
@@ -121,6 +125,14 @@ class SimX500:
         self.Tu = T_up * (rng.uniform(0.7, 1.3) if rand else 1.0)
         self.Td = T_dn * (rng.uniform(0.7, 1.3) if rand else 1.0)
         self.wind = rng.normal(0, 1.5, 3)*np.array([1, 1, 0.2]) if rand else np.zeros(3)
+        # viento de Gazebo: velocidad del aire w (horizontal) y arrastre k m_viento (w - v) en los tres ejes
+        # Con --viento el arrastre está siempre (también en calma, como en los mundos de Gazebo); en 60 %
+        # de los episodios aleatorios hay además viento de hasta 6 m/s. Sin --viento no se sortea nada.
+        self.con_aire = bool(ARGS.viento)
+        self.w_aire = np.zeros(3)
+        if self.con_aire and rand and rng.random() < 0.6:
+            ang = rng.uniform(0, 2*np.pi); mag = rng.uniform(0.0, 6.0)
+            self.w_aire = mag*np.array([np.cos(ang), np.sin(ang), 0.0])
         # centro de masa: el nominal (--com) más una pequeña incertidumbre
         self.com = COM + (rng.normal(0, 0.0002, 2) if rand and COM.any() else 0.0)
         self.A = asignacion(self.com)
@@ -162,6 +174,8 @@ class SimX500:
             acc = np.array([u*(np.sin(ph)*np.sin(psi) + np.cos(ph)*np.cos(psi)*np.sin(th)),
                             u*(np.cos(ph)*np.sin(th)*np.sin(psi) - np.cos(psi)*np.sin(ph)),
                             u*np.cos(th)*np.cos(ph) - self.m*g]) / self.m + self.wind/self.m
+            if self.con_aire:
+                acc += K_VIENTO*VEH["m_viento"]*(self.w_aire - self.v)/self.m
             self.v += h*acc; self.xi += h*self.v
             self.deta += h*tau; self.eta += h*self.deta
         return self.xi, self.eta

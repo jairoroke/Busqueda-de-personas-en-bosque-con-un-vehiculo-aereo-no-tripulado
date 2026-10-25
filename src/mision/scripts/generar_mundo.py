@@ -91,7 +91,12 @@ CABECERA = """<?xml version="1.0" encoding="UTF-8"?>
     </spherical_coordinates>
 """
 
+# WindEffects empuja cada eslabón con <enable_wind> con k m (w - v). Con k = 1 (el valor por omisión)
+# el Tarot de 2.12 kg recibe 8.5 N con 4 m/s (tiene que inclinarse 21° y se vuelca en el suelo al
+# despegar); el arrastre de un multirrotor de este tamaño es ~0.3 N s/m, k = 0.15 (1.3 N, ~3.4°).
+FACTOR_VIENTO = 0.15
 VIENTO = """    <plugin filename="gz-sim-wind-effects-system" name="gz::sim::systems::WindEffects">
+      <force_approximation_scaling_factor>{k}</force_approximation_scaling_factor>
       <horizontal>
         <magnitude>
           <time_for_rise>5</time_for_rise>
@@ -109,6 +114,12 @@ VIENTO = """    <plugin filename="gz-sim-wind-effects-system" name="gz::sim::sys
       </vertical>
     </plugin>
     <wind><linear_velocity>{vx} {vy} 0</linear_velocity></wind>"""
+
+# Sin viento queda el arrastre (el aire quieto también frena al vehículo), sin ráfagas.
+CALMA = """    <plugin filename="gz-sim-wind-effects-system" name="gz::sim::systems::WindEffects">
+      <force_approximation_scaling_factor>{k}</force_approximation_scaling_factor>
+    </plugin>
+    <wind><linear_velocity>0 0 0</linear_velocity></wind>"""
 
 INCLUDE = """    <include>
       <uri>model://{modelo}</uri>
@@ -138,7 +149,8 @@ def generar(oclusion, iluminacion, viento, semilla, lado=120.0, n_personas=None,
     sol, difusa, ambiente = SOL[iluminacion]
     partes = [CABECERA.format(nombre=nombre, sol=sol, difusa=difusa, ambiente=ambiente, paso=paso,
                               frecuencia=round(1.0 / paso),
-                              viento=VIENTO.format(vx=4.0, vy=0.0) if viento == "si" else "")]
+                              viento=VIENTO.format(vx=4.0, vy=0.0, k=FACTOR_VIENTO) if viento == "si"
+                              else CALMA.format(k=FACTOR_VIENTO))]
     # árboles: hasta alcanzar la cobertura de copas del nivel de oclusión; el
     # bosque se extiende 15 m más allá del área de búsqueda para que el borde
     # no sea un claro. Se deja libre el punto de despegue (origen).

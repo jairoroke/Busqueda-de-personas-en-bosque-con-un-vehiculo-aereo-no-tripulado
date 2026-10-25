@@ -27,6 +27,15 @@ Diferencias con el Código 8.5 del diseño original:
     temporizador fijo de modo_neural.py, que podía activar la red a media subida).
   - La consigna avanza a lo más `adelanto_max` metros por delante del vehículo, y el punto
     de ruta cambia cuando el vehículo está a menos de 1.5 m y la consigna ya llegó a él.
+  - Con controlador:=red, integral en la consigna (`ki_consigna`, 0.3 1/s; `integral_max` 6 m): se
+    le suma ki ∫(p_ref − p) dt. La red imita una PD sin integral: el viento y los errores de masa
+    la dejan corrida y, con ArduPilot, el sesgo de altura del EKF quedaba sin corregir. Sólo se
+    integra en crucero (no en las rampas de las esquinas) y sólo el error lateral y vertical: el
+    atraso a lo largo de la ruta, acumulado, la empujaba más allá de cada esquina. Con
+    ki < kd = 1.6 la PID sigue estable.
+  - La consigna frena antes de cada punto y acelera después con `acel_consigna` (1.5 m/s²;
+    0 = rapidez constante). Sin rampas, en cada vuelta de 90° la velocidad de referencia (y con
+    ella el adelanto de la red) cambiaba de dirección de golpe y el vehículo se pasaba.
   - Con controlador:=red la consigna que se manda va adelantada (`prealimentacion`):
     p_ref + c v_ref, con c = kd/kp de la cascada que imita la red (1.6 s en x, y;
     1.25 s en z). Una cascada PD con esa consigna equivale a una con prealimentación
@@ -88,7 +97,8 @@ class Mision(Node):
                               ("registro_personas", os.path.expanduser("~/personas_localizadas.csv")),
                               ("archivo_mapa", ""), ("origen_gps", list(ORIGEN)),
                               ("evasion", True), ("radio_evasion", 3.0), ("alcance_evasion", 20.0),
-                              ("tau_adelanto", 0.0)]:
+                              ("tau_adelanto", 0.0), ("acel_consigna", 1.5),
+                              ("ki_consigna", -1.0), ("integral_max", 6.0)]:
             self.declare_parameter(nombre, valor)
         g = lambda n: self.get_parameter(n).value
         self.estrategia, self.controlador, self.lado, self.h = g("estrategia"), g("controlador"), g("lado"), g("altura")
@@ -103,6 +113,15 @@ class Mision(Node):
         self.v_ref = np.zeros(3)
         self.v_lead = np.zeros(3)                             # v_ref filtrada (la que adelanta la consigna)
         self.alfa_lead = 0.05/(g("tau_adelanto") + 0.05)
+        self.acel = g("acel_consigna")                       # m/s²; 0 = velocidad constante, sin rampas
+        self.v_c = 0.0                                        # rapidez actual de la consigna
+        # integral en la consigna (1/s): la red es una PD sin memoria; el error acumulado corre la
+        # consigna para quitar el error de régimen por viento o masa. -1 = 0.3 con la red, 0 con la cascada
+        self.ki = g("ki_consigna")
+        if self.ki < 0:
+            self.ki = 0.3 if self.controlador == "red" else 0.0
+        self.i_max = g("integral_max")
+        self.integral = np.zeros(3)
         self.create_subscription(Detection3DArray, "/personas/candidatas", self.cb_cand, 10)
         self.pos = None                                       # posición actual en ENU
         self.nav = None; self.armado = False; self.mode_id = None
@@ -293,6 +312,16 @@ class Mision(Node):
         self.v_lead += self.alfa_lead*(self.v_ref - self.v_lead)
         if self.lead.any() and self.fase not in ("despegue", "aterrizaje", "fin"):
             p_env = p_enu + self.lead*self.v_lead              # consigna adelantada (prealimentación)
+        if self.ki > 0 and self.pos is not None and self.fase not in ("despegue", "aterrizaje", "fin"):
+            # sólo integra en crucero: en las rampas de las esquinas el error es transitorio y, si se
+            # acumula, el vehículo se pasa de la vuelta (hasta 2.7 m con ArduPilot),
+            # y sólo el error lateral y vertical: el atraso a lo largo de la ruta (por el arrastre) no
+            # importa para cubrir el área y, acumulado, empujaba al vehículo más allá de cada esquina
+            if self.v_c >= 0.95*self.v and np.linalg.norm(self.v_ref) > 0.1:
+                e = p_enu - self.pos
+                u = self.v_ref/np.linalg.norm(self.v_ref)
+                self.integral = np.clip(self.integral + self.ki*0.05*(e - (e @ u)*u), -self.i_max, self.i_max)
+            p_env = p_env + self.integral
         self.enviar_consigna(p_env, yaw_enu)
         if self.contador % 5 == 0:
             self.registro["consignas"].append([time.time()-self.t0, *map(float, p_enu)])
@@ -314,12 +343,17 @@ class Mision(Node):
             self.desviado = self.evasion.activa
         delta = objetivo - self.consigna
         dist = np.linalg.norm(delta)
-        paso = self.v * 0.05
+        if self.acel > 0:                                     # frenar antes del punto y acelerar después
+            v_c = min(self.v, self.v_c + self.acel*0.05, max(np.sqrt(2*self.acel*dist), 0.2))
+        else:
+            v_c = self.v
+        paso = v_c * 0.05
         candidata = objetivo if dist < paso else self.consigna + paso*delta/dist
         if np.linalg.norm(candidata - self.pos) <= self.adelanto or np.linalg.norm(candidata - self.pos) < \
                 np.linalg.norm(self.consigna - self.pos):
             self.v_ref = (candidata - self.consigna)/0.05       # velocidad de la referencia (ciclo de 20 Hz)
             self.consigna = candidata
+            self.v_c = v_c                                    # detenida por el límite de adelanto no acelera
 
     # ------------------------------------------------------------ ciclo principal
     def ciclo(self):
