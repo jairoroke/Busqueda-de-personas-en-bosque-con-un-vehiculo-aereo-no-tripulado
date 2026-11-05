@@ -76,6 +76,43 @@ y sin GPU (≈ 0.08 veces el tiempo real), así que YOLO tarda ≈ 2.5 s por cua
 
 <!-- /demo -->
 
+## Consolas de ArduPilot (MAVProxy)
+
+![Escritorio con piloto:=ardupilot: terminal y consola de MAVProxy a la izquierda, Gazebo con el Tarot 650 Pro y el panel de YOLO al centro, y el mapa de MAVProxy con la ruta y las personas avisadas a la derecha](../docs/demo/ardupilot_consolas.jpg)
+
+Con `piloto:=ardupilot` y GUI, el launch abre MAVProxy conectado a ArduCopter 4.7.2 SITL por TCP 5762,
+y `mision.ventanas_sitl` acomoda las ventanas:
+
+| Ventana | Qué muestra |
+|---|---|
+| Terminal de MAVProxy (arriba a la izquierda) | Donde se escriben los comandos (`mode`, `arm`, `map zoom`, `trayectoria borrar`, …) |
+| Consola de MAVProxy (abajo a la izquierda) | Modo, armado, GPS, EKF3, altura, velocidad y los mensajes de ArduCopter |
+| Gazebo (centro) | El Tarot 650 Pro y el panel «Detección de personas (YOLO)» |
+| Mapa de MAVProxy (derecha) | Ruta de barrido (cian), recorrido (magenta) y cada persona avisada con su GPS (rojo), dibujados por `mision.mavproxy_trayectoria` |
+
+| Consola: GUIDED, armado y despegue con el EKF3 | Mapa al terminar el barrido |
+|---|---|
+| ![Consola de MAVProxy: modo GUIDED, GPS OK6, EKF3 usando el GPS, Arming motors, ARMED y la altura](../docs/demo/ardupilot_consola.jpg) | ![Mapa de MAVProxy con la ruta de barrido, el recorrido del Tarot y los avisos PERSONA 1 a 4 con sus coordenadas](../docs/demo/ardupilot_mapa.jpg) |
+
+Corrida del 5 nov 2026: `ros2 launch mision simulacion.launch.py piloto:=ardupilot`, con barrido fijo,
+controlador en cascada y ArduCopter volando con su EKF3, en el bosque de la tabla de resultados.
+Resultados:
+
+- Localizó a las 3 personas con un error medio de 0.73 m (0.44, 0.60 y 1.15 m).
+- Siguió la ruta con un RMSE de 0.08 m.
+- Dio 4 avisos con GPS: PERSONA 4 es una falsa alarma persistente.
+- Tuvo 12 falsas alarmas con n ≥ 1 detección y 3 con n ≥ 10.
+
+Esta corrida se hizo en un contenedor sin GPU, a ≈ 0.07 veces el tiempo real, y eso explica tres
+diferencias con una corrida en tu máquina:
+
+- **El mapa sale sin foto satelital** («Unavailable»): el contenedor no tenía acceso a los servidores de
+  mosaicos. En una máquina con internet se ve la imagen.
+- **El recorrido magenta empieza en la primera franja**: al arrancar, la ventana del mapa tardó más de
+  los 5 s que espera MAVProxy, y MAVProxy se volvió a abrir ya en vuelo.
+- **La misión se cerró antes de tocar tierra**: la espera del aterrizaje de `mision_node` cuenta 60 s de
+  reloj de pared, que a esa velocidad son unos 4 s simulados. La última captura muestra el modo LAND.
+
 Simulación integrada en ROS 2 Jazzy + Gazebo Harmonic: bosque generado por factores, Tarot 650 Pro
 con cámara y LiDAR (o el x500 de PX4 con `vehiculo:=x500`), detector YOLO26s, localización rayo–terreno con fusión, avisos con coordenadas GPS,
 misión de barrido fijo o con re-observación, controlador en cascada o red neuronal, con PX4 1.17 o
