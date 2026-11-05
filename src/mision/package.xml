@@ -3,7 +3,7 @@
 <package format="3">
   <name>mision</name>
   <version>0.1.0</version>
-  <description>Búsqueda y localización de personas en bosque con un x500 (PX4 v1.17, Gazebo Harmonic, ROS 2 Jazzy): detector YOLO, localización rayo-terreno con covarianza, misión offboard con re-observación y controlador neuronal mc_nn_control.</description>
+  <description>Búsqueda y localización de personas en bosque con un Tarot 650 Pro (PX4 v1.17 o ArduCopter 4.7, Gazebo Harmonic, ROS 2 Jazzy): detector YOLO, localización rayo-terreno con covarianza, misión offboard con re-observación y controlador neuronal mc_nn_control.</description>
   <maintainer email="jairoolguin1@gmail.com">Jairo Olguín Roque</maintainer>
   <license>BSD-3-Clause</license>
 
