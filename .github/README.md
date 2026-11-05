@@ -54,15 +54,25 @@ en la RTX 5060 Ti tarda 15.6 ms.
 <!-- demo -->
 ## Demostración
 
-![El Tarot 650 barre el bosque a 30 m siguiendo la ruta de búsqueda (vista de Gazebo que sigue al dron)](https://github.com/jairoroke/Busqueda-de-personas-en-bosque-con-un-vehiculo-aereo-no-tripulado/raw/main/docs/demo/demo.gif)
+![El Tarot 650 Pro barre el bosque a 30 m: a la izquierda la vista de Gazebo que lo sigue, a la derecha su cámara con las detecciones de YOLO26s](../docs/demo/demo.gif)
 
-Misión de barrido fijo con `piloto:=ardupilot` y el controlador en cascada: despegue, 8 puntos de ruta a 30 m sobre un bosque de 295 árboles (cobertura 45 %) y aterrizaje; la misión terminó en 356 s con un RMSE de seguimiento de 0.10 m. Video: [docs/demo/demo.mp4](https://github.com/jairoroke/Busqueda-de-personas-en-bosque-con-un-vehiculo-aereo-no-tripulado/raw/main/docs/demo/demo.mp4)
+El Tarot 650 Pro barre el bosque a 30 m y aterriza. A la izquierda, la vista de Gazebo que lo sigue; a la
+derecha, su cámara con las cajas de `detector_node` (YOLO26s). El video va 10 veces más rápido que el
+tiempo de simulación. Video completo: [docs/demo/demo.mp4](../docs/demo/demo.mp4)
 
-| Inicio del barrido | Mitad | Final |
+| Primera franja | Segunda franja | Aterrizaje |
 |---|---|---|
-| ![1](https://github.com/jairoroke/Busqueda-de-personas-en-bosque-con-un-vehiculo-aereo-no-tripulado/raw/main/docs/demo/camara_150.jpg) | ![2](https://github.com/jairoroke/Busqueda-de-personas-en-bosque-con-un-vehiculo-aereo-no-tripulado/raw/main/docs/demo/camara_241.jpg) | ![3](https://github.com/jairoroke/Busqueda-de-personas-en-bosque-con-un-vehiculo-aereo-no-tripulado/raw/main/docs/demo/camara_332.jpg) |
+| ![Primera franja: el Tarot sobre el bosque y su cámara con una persona detectada](../docs/demo/vuelo_franja1.jpg) | ![Segunda franja: el Tarot entre los robles y su cámara con una persona detectada](../docs/demo/vuelo_franja2.jpg) | ![Aterrizaje: el Tarot a 0.8 m del suelo y su cámara viendo la sombra del dron](../docs/demo/vuelo_aterrizaje.jpg) |
 
-Corrida en Ubuntu 24.04 (WSL2), ROS 2 Jazzy, Gazebo Harmonic y ArduCopter 4.7 SITL.
+Bosque de 295 árboles (oclusión media, cobertura 45 %, semilla 1, 3 personas). Ruta de 8 puntos en
+franjas a 3 m/s: despegue en 15 s, barrido de 210 s y aterrizaje en 16 s; seguimiento de la ruta con un
+RMSE de 0.21 m (1.1 m como máximo, en las vueltas) a 30.0 m de altura.
+
+En este video vuela la red neuronal del Tarot (15-64-32-4, `codigo/pesos_nn_tarot650_busqueda.npz`)
+con las mismas entradas que `controlador_red` y el estado de Gazebo, sin PX4 ni ArduPilot. La consigna
+sigue la ruta de `mision_node`: rampas de 1.5 m/s² en las esquinas, prealimentación e integral lateral.
+Se grabó el 5 nov 2026 en Ubuntu 24.04 con ROS 2 Jazzy y Gazebo Harmonic 8.11, con render por software
+y sin GPU (≈ 0.08 veces el tiempo real), así que YOLO tarda ≈ 2.5 s por cuadro.
 
 <!-- /demo -->
 
