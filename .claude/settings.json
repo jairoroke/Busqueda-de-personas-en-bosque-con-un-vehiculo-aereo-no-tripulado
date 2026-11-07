@@ -9,5 +9,8 @@
   },
   "enabledPlugins": {
     "ecc@ecc": true
+  },
+  "env": {
+    "ECC_GATEGUARD": "off"
   }
 }
